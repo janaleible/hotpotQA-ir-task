@@ -33,8 +33,8 @@ class Index:
         self.stemmer = stemmer
         self.stopwords = set(stopwords)
 
-        self.unigram_index = cols.defaultdict(list)
-        self.bigram_index = cols.defaultdict(list)
+        self.unigram_index = cols.defaultdict(set)
+        self.bigram_index = cols.defaultdict(lset)
 
         self.title2id = cols.defaultdict(lambda: len(self.title2id))
         self.id2title = dict()
@@ -66,14 +66,14 @@ class Index:
         for token_id in tokens:
             unigram: Tuple[int] = (token_id,)  # comma needed for tuple creation
             document_id: int = self.title2id[title]
-            if document_id not in self.unigram_index[unigram]:
-                self.unigram_index[unigram].append(document_id)
+            # if document_id not in self.unigram_index[unigram]:
+            self.unigram_index[unigram].add(document_id)
 
     def _add_bigram(self, tokens: List[int], title: str):
         for bigram in nltk.bigrams(tokens):
             document_id: int = self.title2id[title]
-            if document_id not in self.bigram_index[bigram]:
-                self.bigram_index[bigram].append(document_id)
+            # if document_id not in self.bigram_index[bigram]:
+            self.bigram_index[bigram].add(document_id)
 
     def __prepare_tokens(self, title: str, document: List[List[str]]) -> List[int]:
         # flatten document to list of words and join in string.
