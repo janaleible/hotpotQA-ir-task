@@ -1,6 +1,9 @@
+from data_processing.sql import CREATE_TABLE_IF_NOT_EXISTS, insert_string
 from services import parallel
 from constants import *
 from glob import glob
+
+import sqlite3
 import logging
 import pickle
 import json
@@ -19,13 +22,22 @@ def remove_links(text: str):
 def title_and_first_paragraph():
     file_paths = sorted(glob(os.path.join(RAW_DATA_DIR, '*')))
     done_count = 0
+
+    connection = sqlite3.connect(PREPROCESSED_DB)
+    c = connection.cursor()
+
+    c.execute(CREATE_TABLE_IF_NOT_EXISTS)
+    connection.commit()
+    connection.close()
+
+
     for _ in parallel.execute(_process_folder, file_paths):
         done_count += 1
     logging.info(f'Finished extraction. Successfully processed: [{done_count:03d}/{len(file_paths):03d}]')
 
 
 def _process_folder(folder_path: str):
-    folder_name = folder_path.split('/')[-1]
+    group = folder_path.split('/')[-1]
     data = {}
 
     file_paths = glob(os.path.join(folder_path, '*.bz2'))
@@ -45,10 +57,19 @@ def _process_folder(folder_path: str):
                     paragraph_index += 1
 
                 data[article['title']] = paragraphs
-    with open(os.path.join(PREPROCESSED_DATA_DIR, f'{folder_name}.dict.tar'), 'wb') as file:
-        pickle.dump(data, file)
-    logging.info(f'Finished processing folder {folder_name}.')
-    return folder_name, data
+
+    connection = sqlite3.connect(PREPROCESSED_DB)
+    cursor = connection.cursor()
+
+    for (title, article) in data:
+        cursor.execute(insert_string(title, pickle.dumps(article)))
+
+    connection.commit()
+    connection.close()
+
+    logging.info(f'Finished processing folder {group}.')
+
+    return group, data
 
 
 if __name__ == '__main__':

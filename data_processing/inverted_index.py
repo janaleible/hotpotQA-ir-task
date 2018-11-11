@@ -41,6 +41,8 @@ class Index:
         self.token2id = cols.defaultdict(lambda: len(self.token2id))
         self.id2token = dict()
 
+        self.title2group = dict()
+
     def lookup(self, query: str):
         """
         Lookup a query in the index. Query is 1 or 2-word tuple for unigram or bigram lookup.
@@ -53,7 +55,7 @@ class Index:
         else:
             raise ValueError(f'Query has more than 2 non-stopwords {query}')
 
-    def add(self, title: str, document: List[List[str]]):
+    def add(self, title: str, document: List[List[str]], group: str):
         """
         Add a document to the index. Prepares documents by stemming, removing stopwords, and converting tokens
         to ids. Creates a unigram and a bigram index.
@@ -61,6 +63,8 @@ class Index:
         tokens = self.__prepare_tokens(title, document)
         self._add_unigram(tokens, title)
         self._add_bigram(tokens, title)
+
+        self.title2group[title] = group
 
     def _add_unigram(self, tokens: List[int], title: str):
         for token_id in tokens:
@@ -106,7 +110,7 @@ def build(group: str = None):
             articles = pickle.load(file)
 
         for (title, article) in articles.items():
-            index.add(title, article)
+            index.add(title, article, file_path.split('/')[-1].split('.')[0])
 
     with open(INDEX_FILE, 'wb') as pkl:
         index.unigram_index = dict(index.unigram_index)
