@@ -93,10 +93,14 @@ class Index:
         return [self.token2id[token] for token in tokens]
 
 
-def build():
+def build(group: str = None):
     index = Index(EnglishStemmer(), nltk.corpus.stopwords.words('english'))
 
-    file_paths = glob(os.path.join(PREPROCESSED_DATA_DIR, '*.dict.tar'))
+    if group is not None:
+        file_paths = glob(os.path.join(PREPROCESSED_DATA_DIR, f'{group}.dict.tar'))
+    else:
+        file_paths = glob(os.path.join(PREPROCESSED_DATA_DIR, f'*.dict.tar'))
+
     for file_path in tqdm(file_paths):
         with open(file_path, 'rb') as file:
             articles = pickle.load(file)

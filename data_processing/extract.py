@@ -1,9 +1,8 @@
+from services import parallel
+from constants import *
+from glob import glob
 import logging
 import pickle
-
-from constants import *
-from services import parallel
-from glob import glob
 import json
 import bz2
 import re
@@ -11,8 +10,8 @@ import os
 
 
 def remove_links(text: str):
-    text.replace('</a>', ' ')
-    text = re.sub('<a href=.*>', '', text)
+    text = text.replace('</a>', ' ')
+    text = re.sub('<a href=[^>]*>', '', text)
 
     return text
 
