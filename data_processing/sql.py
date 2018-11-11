@@ -3,8 +3,7 @@ CREATE_TABLE_IF_NOT_EXISTS = """
     (title TEXT PRIMARY KEY, article BLOB )
     """
 
-def insert_string(title, article):
-    return f"""
-        INSERT INTO articles
-        VALUES {title}, {article}
+INSERT_PREPROCESSED = """
+        INSERT INTO articles (title, article)
+        VALUES (?, ?)
     """

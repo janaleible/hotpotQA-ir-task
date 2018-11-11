@@ -1,4 +1,4 @@
-from data_processing.sql import CREATE_TABLE_IF_NOT_EXISTS, insert_string
+from data_processing.sql import *
 from services import parallel
 from constants import *
 from glob import glob
@@ -28,12 +28,13 @@ def title_and_first_paragraph():
 
     c.execute(CREATE_TABLE_IF_NOT_EXISTS)
     connection.commit()
-    connection.close()
 
-
-    for _ in parallel.execute(_process_folder, file_paths):
+    for group, group_inserts in parallel.execute(_process_folder, file_paths):
+        c.executemany(INSERT_PREPROCESSED, group_inserts)
         done_count += 1
     logging.info(f'Finished extraction. Successfully processed: [{done_count:03d}/{len(file_paths):03d}]')
+    connection.commit()
+    connection.close()
 
 
 def _process_folder(folder_path: str):
@@ -58,18 +59,13 @@ def _process_folder(folder_path: str):
 
                 data[article['title']] = paragraphs
 
-    connection = sqlite3.connect(PREPROCESSED_DB)
-    cursor = connection.cursor()
-
-    for (title, article) in data:
-        cursor.execute(insert_string(title, pickle.dumps(article)))
-
-    connection.commit()
-    connection.close()
+    inserts = []
+    for (title, article) in data.items():
+        inserts.append((title, pickle.dumps(article)))
 
     logging.info(f'Finished processing folder {group}.')
 
-    return group, data
+    return group, inserts
 
 
 if __name__ == '__main__':
