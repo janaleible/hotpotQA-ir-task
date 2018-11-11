@@ -6,7 +6,6 @@ import itertools as it
 from tqdm import tqdm
 from glob import glob
 import pickle
-import json
 import os
 
 import nltk
@@ -23,7 +22,8 @@ class Index:
     title2id: Dict[str, int]
     id2title: Dict[int, str]
 
-    index: Dict[Tuple[int], List[int]]
+    unigram_index: Dict[Tuple[int], Set[int]]
+    bigram_index: Dict[Tuple[int], Set[int]]
 
     def __init__(self, stemmer, stopwords):
         """
@@ -34,7 +34,7 @@ class Index:
         self.stopwords = set(stopwords)
 
         self.unigram_index = cols.defaultdict(set)
-        self.bigram_index = cols.defaultdict(lset)
+        self.bigram_index = cols.defaultdict(set)
 
         self.title2id = cols.defaultdict(lambda: len(self.title2id))
         self.id2title = dict()
@@ -98,11 +98,10 @@ def build():
 
     file_paths = glob(os.path.join(PREPROCESSED_DATA_DIR, '*.dict.tar'))
     for file_path in tqdm(file_paths):
-        with open(file_path, 'r') as file:
-            articles = json.load(file)
+        with open(file_path, 'rb') as file:
+            articles = pickle.load(file)
 
         for (title, article) in articles.items():
-            index.add(title, article)
             index.add(title, article)
 
     with open(INDEX_FILE, 'wb') as pkl:
