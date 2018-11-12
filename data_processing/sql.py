@@ -1,9 +1,17 @@
 CREATE_TABLE_IF_NOT_EXISTS = """
     CREATE TABLE IF NOT EXISTS articles 
-    (title TEXT PRIMARY KEY, article BLOB )
+    (id INTEGER PRIMARY KEY, title TEXT, doc_string TEXT, doc_blob BLOB, tokens BLOB)
     """
 
-INSERT_PREPROCESSED = """
-        INSERT INTO articles (title, article)
-        VALUES (?, ?)
+INSERT_EXTRACTED_DOC = """
+        INSERT INTO articles (id, title, doc_string, doc_blob, tokens)
+        VALUES (?, ?, ?, ?, ?)
     """
+
+RETRIEVE_ALL = """
+    SELECT title, tokens FROM articles
+"""
+
+COUNT_ALL = """
+    SELECT COUNT(*) FROM articles
+"""

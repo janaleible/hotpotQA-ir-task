@@ -1,8 +1,11 @@
+import nltk
+
+from data_processing.inverted_index import stemmer, stopwords
 from data_processing.sql import *
 from services import parallel
 from constants import *
 from glob import glob
-
+import itertools as it
 import sqlite3
 import logging
 import pickle
@@ -10,6 +13,8 @@ import json
 import bz2
 import re
 import os
+
+logging.basicConfig(level='INFO')
 
 
 def remove_links(text: str):
@@ -28,18 +33,18 @@ def title_and_first_paragraph():
 
     c.execute(CREATE_TABLE_IF_NOT_EXISTS)
     connection.commit()
-
+    logging.info(f'\t[{os.getpid()}]\tStarting extraction. Total to process: {len(file_paths):03d}')
     for group, group_inserts in parallel.execute(_process_folder, file_paths):
-        c.executemany(INSERT_PREPROCESSED, group_inserts)
+        c.executemany(INSERT_EXTRACTED_DOC, group_inserts)
+        connection.commit()
         done_count += 1
-    logging.info(f'Finished extraction. Successfully processed: [{done_count:03d}/{len(file_paths):03d}]')
-    connection.commit()
+    logging.info(f'\t[{os.getpid()}]\tFinished extraction.\t[{done_count:03d}/{len(file_paths):03d}]')
     connection.close()
 
 
 def _process_folder(folder_path: str):
     group = folder_path.split('/')[-1]
-    data = {}
+    data = []
 
     file_paths = glob(os.path.join(folder_path, '*.bz2'))
     for file_path in file_paths:
@@ -57,15 +62,15 @@ def _process_folder(folder_path: str):
                     char_count += sum(len(sentence) for sentence in plaintext)
                     paragraph_index += 1
 
-                data[article['title']] = paragraphs
+                doc_string = " ".join(["".join(sentences) for sentences in paragraphs])
 
-    inserts = []
-    for (title, article) in data.items():
-        inserts.append((title, pickle.dumps(article)))
+                tokens = [stemmer.stem(token.lower()) for token in nltk.word_tokenize(doc_string) if
+                          token.lower() not in stopwords]
+                doc = (article['id'], article['title'], doc_string, pickle.dumps(paragraphs), pickle.dumps(tokens))
+                data.append(doc)
+    logging.info(f'\t[{os.getpid()}]\tFinished processing folder {group}.')
 
-    logging.info(f'Finished processing folder {group}.')
-
-    return group, inserts
+    return group, data
 
 
 if __name__ == '__main__':
