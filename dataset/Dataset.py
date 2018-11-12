@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Dict
 
 from constants import *
 
@@ -13,8 +13,8 @@ class Question:
         self.level = level
         self.type = type
 
-        self.gold_articles = [fact[0] for fact in supporting_facts]
-        self.context = {article[0]: article[1] for article in context}
+        self.gold_articles: List[str] = [fact[0] for fact in supporting_facts]
+        self.context: Dict[str, List[str]] = {article[0]: article[1] for article in context}
 
 
 class Dataset:

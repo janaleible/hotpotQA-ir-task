@@ -3,7 +3,7 @@ from collections import Counter
 import nltk
 
 
-def unigram_bigram(query: str, ind: Index, n: int = 5000):
+def unigram_bigram_filter(query: str, ind: Index, n: int = 5000):
     """ Retrieves the at most n candidates from the full set of articles based on query-document pair bigram/unigram
     matches. Uses pre-built inverted index. Assumed to be equivalent to Algorithm 2, Appendix C of HotpotQA paper.
     Possible mismatches:

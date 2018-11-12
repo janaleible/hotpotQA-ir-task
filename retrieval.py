@@ -8,4 +8,4 @@ if __name__ == '__main__':
         aa = pickle.load(file)
     index = inverted_index.load()
 
-    filtering.unigram_bigram("asd", index, n=3)
+    filtering.unigram_bigram_filter("asd", index, n=3)
