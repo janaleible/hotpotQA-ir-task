@@ -7,6 +7,8 @@ if [ ! -d "data/raw" ]; then
     wget --output-document data/raw.tar.bz2 https://nlp.stanford.edu/projects/hotpotqa/enwiki-20171001-pages-meta-current-withlinks-processed.tar.bz2
     bzip2 -d data/raw.tar.bz2
     tar -xvf data/raw.tar
+    mv enwiki-20171001-pages-meta-current-withlinks-processed data/
+    mv enwiki-20171001-pages-meta-current-withlinks-processed/ raw/
     rm data/raw.tar
 fi
 
