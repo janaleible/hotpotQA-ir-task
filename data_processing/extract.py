@@ -5,7 +5,6 @@ from data_processing.sql import *
 from services import parallel
 from constants import *
 from glob import glob
-import itertools as it
 import sqlite3
 import logging
 import pickle
