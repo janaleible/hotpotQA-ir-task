@@ -17,7 +17,7 @@ class Question:
         self.context = {article[0]: article[1] for article in context}
 
 
-class MyDataset:
+class Dataset:
 
     def __init__(self, filename: str, max_questions: int = None) -> None:
 
@@ -56,7 +56,7 @@ class MyDataset:
 
 if __name__ == '__main__':
 
-    training_set = MyDataset(TRAINING_SET, max_questions=50)
+    training_set = Dataset(TRAINING_SET, max_questions=50)
 
     for question in training_set:
         print(question.question)
