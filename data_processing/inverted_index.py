@@ -55,7 +55,7 @@ unigram_index: Dict[Tuple[int], Set[int]] = cols.defaultdict(set)
 bigram_index: Dict[Tuple[int], Set[int]] = cols.defaultdict(set)
 
 
-def load():
+def load() -> Index:
     return Index()
 
 

@@ -48,6 +48,7 @@ class Dataset:
     def __next__(self):
 
         if self._current_index >= len(self.questions):
+            self._current_index = 0
             raise StopIteration
 
         self._current_index += 1
