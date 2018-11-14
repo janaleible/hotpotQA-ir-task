@@ -17,6 +17,7 @@ jupyter-console==6.0.0
 jupyter-core==4.4.0
 jupyterlab==0.35.4
 jupyterlab-server==0.2.0
+lxml==4.2.5
 MarkupSafe==1.1.0
 mistune==0.8.4
 nbconvert==5.4.0
@@ -32,6 +33,7 @@ prometheus-client==0.4.2
 prompt-toolkit==2.0.7
 ptyprocess==0.6.0
 Pygments==2.2.0
+pyndri==0.4
 python-dateutil==2.7.5
 pyzmq==17.1.2
 qtconsole==4.4.3
