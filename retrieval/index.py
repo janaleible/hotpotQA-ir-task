@@ -1,7 +1,9 @@
 import logging
+import string
 from datetime import datetime
 
 import nltk
+from nltk import StemmerI
 
 from constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS
 from typing import Dict, List, Set, Tuple
@@ -30,29 +32,30 @@ class Index(object):
     title2wid: Dict[str, List[int]]
     wid2title: Dict[int, str]
 
-    stemmer: str
+    stemmer: StemmerI
     stopwords: Set[int]
 
     def __init__(self):
+        self.punctuation = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
         start = datetime.now()
 
-        self.index = pyndri.Index('../' + INDRI_INDEX_DIR)
+        self.index = pyndri.Index(INDRI_INDEX_DIR)
 
         self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
         self.id2tf = self.index.get_term_frequencies()
 
-        with open('../' + TITLE2WID, 'rb') as file:
+        with open(TITLE2WID, 'rb') as file:
             self.title2wid = pickle.load(file)
-        with open('../' + WID2TITLE, 'rb') as file:
+        with open(WID2TITLE, 'rb') as file:
             self.wid2title = pickle.load(file)
 
-        tree = ElementTree.parse('../build_indri_index.xml')
+        tree = ElementTree.parse('build_indri_index.xml')
         stemmer: str = tree.find('stemmer').find('name').text
         if stemmer == 'porter':
             self.stemmer = nltk.stem.porter.PorterStemmer()
         stopwords = set()
         for elem in tree.find('stopper').iter('word'):
-            self.stopwords.add(elem.text)
+            stopwords.add(elem.text)
         self.stopwords = frozenset(stopwords)
 
         stop = datetime.now()
@@ -92,6 +95,9 @@ class Index(object):
             doc_str = doc_str.replace(EOP, '\n\n').replace(EOS, '')
 
         return doc_str
+
+    def _remove_punctuation(self, s: str):
+        return s.translate(self.punctuation)
 
 
 if __name__ == '__main__':
