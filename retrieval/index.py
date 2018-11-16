@@ -1,17 +1,16 @@
 import logging
-import string
-import sys
 from datetime import datetime
 
 import nltk
 from nltk import StemmerI
-from unidecode import unidecode
 
 from constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Tuple
 from xml.etree import ElementTree
 import pickle
 import pyndri
+
+from retrieval.Tokenizer import Tokenizer
 
 logging.basicConfig(level='INFO')
 
@@ -35,10 +34,10 @@ class Index(object):
     wid2title: Dict[int, str]
 
     stemmer: StemmerI
-    stopwords: Set[int]
+    tokenizer: Tokenizer
 
     def __init__(self):
-        self.punctuation = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
+
         start = datetime.now()
 
         self.index = pyndri.Index(INDRI_INDEX_DIR)
@@ -59,22 +58,18 @@ class Index(object):
         else:
             raise ValueError('Unknown stemmer selected')
 
-        stopwords = set()
-
-        for elem in tree.find('stopper').iter('word'):
-            stopwords.add(elem.text)
-        self.stopwords = frozenset(stopwords)
+        self.tokenizer = Tokenizer()
 
         stop = datetime.now()
         logging.info(f'Loaded index from {INDRI_INDEX_DIR} with {stemmer.capitalize()} stemmer in {stop - start}.')
 
     def bigram_lookup(self, first: str, second: str) -> List[Tuple[int, float]]:
         """Retrieve documents according to bigram full text search."""
-        return self.index.query(f'#1({self._normalize(first)} {self._normalize(second)})', results_requested=65500)
+        return self.index.query(f'#1({self.tokenizer.normalize(first)} {self.tokenizer.normalize(second)})', results_requested=65500)
 
     def unigram_lookup(self, first: str) -> List[Tuple[int, float]]:
         """Retrieve documents according to unigram text search."""
-        return self.index.query(f'{self._normalize(first)}', results_requested=65500)
+        return self.index.query(f'{self.tokenizer.normalize(first)}', results_requested=65500)
 
     def title_lookup(self, title) -> List[Tuple[int, float]]:
         """Retrieve documents according to unigram title only search."""
@@ -109,13 +104,6 @@ class Index(object):
             doc_str = doc_str.replace(EOP, '\n\n').replace(EOS, '')
 
         return doc_str
-
-    def _normalize(self, s: str) -> str:
-        s = s.translate(self.punctuation)
-        s = unidecode(s)
-
-        return s
-
 
 if __name__ == '__main__':
     index = Index()

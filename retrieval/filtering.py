@@ -23,11 +23,7 @@ def unigram_bigram_filter(query: str, index: Index, n: int = 5000):
 
     # tokenize, step, filter stopwords and collect unigrams and bigrams
 
-    query = unidecode(query)
-    query = query.translate(str.maketrans(string.punctuation, ' ' * len(string.punctuation)))
-    query = query.lower()
-
-    tokenized_query = [token for token in nltk.word_tokenize(query) if token not in index.stopwords]
+    tokenized_query = index.tokenizer.tokenize(query)
     query_unigrams = set([(token,) for token in tokenized_query])
     query_bigrams = set(nltk.bigrams(tokenized_query))
 
