@@ -54,6 +54,9 @@ class Dataset:
         self._current_index += 1
         return self.questions[self._current_index - 1]
 
+    def __len__(self):
+        return len(self.questions)
+
 
 if __name__ == '__main__':
 
