@@ -1,6 +1,7 @@
 import string
 from collections import Counter
 import nltk
+from unidecode import unidecode
 
 from retrieval.index import Index
 
@@ -22,8 +23,8 @@ def unigram_bigram_filter(query: str, index: Index, n: int = 5000):
 
     # tokenize, step, filter stopwords and collect unigrams and bigrams
 
+    query = unidecode(query)
     query = query.translate(str.maketrans(string.punctuation, ' ' * len(string.punctuation)))
-    query = query.replace('–', ' ')
     query = query.lower()
 
     tokenized_query = [token for token in nltk.word_tokenize(query) if token not in index.stopwords]
@@ -33,11 +34,10 @@ def unigram_bigram_filter(query: str, index: Index, n: int = 5000):
     # count the overlapping n-gram for each query-document pair
     overlap_set = Counter()
     for bigram in query_bigrams:
-        print(bigram)
         for (doc_id, _) in index.bigram_lookup(bigram[0], bigram[1]):
             overlap_set[doc_id] += 1
+
     for unigram in query_unigrams:
-        print(unigram)
         for (doc_id, _) in index.unigram_lookup(str(unigram[0])):
             overlap_set[doc_id] += 1
 

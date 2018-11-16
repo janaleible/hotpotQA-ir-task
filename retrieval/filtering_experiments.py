@@ -1,5 +1,3 @@
-import sys
-
 import numpy
 from tqdm import tqdm
 
@@ -26,8 +24,7 @@ found_articles = numpy.zeros((2, 3, 3))
 for question in tqdm(training_set, unit='questions'):
 
     gold_article_ids = set()
-    [[gold_article_ids.add(id) for id in index.title2wid[title]] for title in question.gold_articles]
-
+    [[gold_article_ids.add(index.external2internal(id)) for id in index.title2wid[title]] for title in question.gold_articles]
 
     filtered_articles = unigram_bigram_filter(question.question, index)
 

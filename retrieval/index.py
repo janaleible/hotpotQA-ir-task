@@ -1,9 +1,11 @@
 import logging
 import string
+import sys
 from datetime import datetime
 
 import nltk
 from nltk import StemmerI
+from unidecode import unidecode
 
 from constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS
 from typing import Dict, List, Set, Tuple
@@ -51,9 +53,14 @@ class Index(object):
 
         tree = ElementTree.parse('build_indri_index.xml')
         stemmer: str = tree.find('stemmer').find('name').text
+
         if stemmer == 'porter':
             self.stemmer = nltk.stem.porter.PorterStemmer()
+        else:
+            raise ValueError('Unknown stemmer selected')
+
         stopwords = set()
+
         for elem in tree.find('stopper').iter('word'):
             stopwords.add(elem.text)
         self.stopwords = frozenset(stopwords)
@@ -63,11 +70,11 @@ class Index(object):
 
     def bigram_lookup(self, first: str, second: str) -> List[Tuple[int, float]]:
         """Retrieve documents according to bigram full text search."""
-        return self.index.query(f'#1({first} {second})')
+        return self.index.query(f'#1({self._normalize(first)} {self._normalize(second)})', results_requested=65500)
 
     def unigram_lookup(self, first: str) -> List[Tuple[int, float]]:
         """Retrieve documents according to unigram text search."""
-        return self.index.query(f'{first}')
+        return self.index.query(f'{self._normalize(first)}', results_requested=65500)
 
     def title_lookup(self, title) -> List[Tuple[int, float]]:
         """Retrieve documents according to unigram title only search."""
@@ -77,6 +84,13 @@ class Index(object):
         """Generator over the documents in the index."""
         for idx in range(self.index.document_base(), self.index.maximum_document()):
             yield self.index.document_base(idx)
+
+    def internal2external(self, internal: int) -> int:
+        return int(self.index.document(internal))
+
+    def external2internal(self, external: int) -> int:
+        return self.index.document_ids([str(external)])[0][1]
+
 
     def inspect_document(self, doc: Tuple[str, Tuple[int]], include_stop: bool, format: bool) -> str:
         """Reproduce the stemmed document stored by indri as a string.
@@ -96,8 +110,11 @@ class Index(object):
 
         return doc_str
 
-    def _remove_punctuation(self, s: str):
-        return s.translate(self.punctuation)
+    def _normalize(self, s: str) -> str:
+        s = s.translate(self.punctuation)
+        s = unidecode(s)
+
+        return s
 
 
 if __name__ == '__main__':
