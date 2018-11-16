@@ -29,7 +29,6 @@ class Tokenizer:
         return tokenized
 
     def normalize(self, s: str) -> str:
-        s = s.lower()
         s = unidecode(s)
         s = s.translate(self.punctuation)
 

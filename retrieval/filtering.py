@@ -1,7 +1,5 @@
-import string
 from collections import Counter
 import nltk
-from unidecode import unidecode
 
 from retrieval.index import Index
 
@@ -24,7 +22,7 @@ def unigram_bigram_filter(query: str, index: Index, n: int = 5000):
     # tokenize, step, filter stopwords and collect unigrams and bigrams
 
     tokenized_query = index.tokenizer.tokenize(query)
-    query_unigrams = set([(token,) for token in tokenized_query])
+    query_unigrams = set(tokenized_query)
     query_bigrams = set(nltk.bigrams(tokenized_query))
 
     # count the overlapping n-gram for each query-document pair
@@ -34,7 +32,7 @@ def unigram_bigram_filter(query: str, index: Index, n: int = 5000):
             overlap_set[doc_id] += 1
 
     for unigram in query_unigrams:
-        for (doc_id, _) in index.unigram_lookup(str(unigram[0])):
+        for (doc_id, _) in index.unigram_lookup(unigram):
             overlap_set[doc_id] += 1
 
     # Get the best n+1 documents and filter all the ones that have a count equal to the smallest count in the list.

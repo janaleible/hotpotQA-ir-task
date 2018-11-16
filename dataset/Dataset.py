@@ -6,12 +6,13 @@ from constants import *
 
 class Question:
 
-    def __init__(self, question: str, answer: str, type: str, level: str, context: List[List], supporting_facts: List[List]) -> None:
+    def __init__(self, _id: str, question: str, answer: str, _type: str, level: str, context: List[List], supporting_facts: List[List]) -> None:
 
+        self.id = _id
         self.question = question
         self.answer = answer
         self.level = level
-        self.type = type
+        self.type = _type
 
         self.gold_articles: List[str] = [fact[0] for fact in supporting_facts]
         self.context: Dict[str, List[str]] = {article[0]: article[1] for article in context}
@@ -33,6 +34,7 @@ class Dataset:
                 break
 
             question = Question(
+                json_question['_id'],
                 json_question['question'],
                 json_question['answer'],
                 json_question['type'],
@@ -62,5 +64,5 @@ if __name__ == '__main__':
 
     training_set = Dataset(TRAINING_SET, max_questions=50)
 
-    for question in training_set:
-        print(question.question)
+    for qs in training_set:
+        print(qs.question)

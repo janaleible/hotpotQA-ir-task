@@ -1,4 +1,5 @@
 import os
+from types import SimpleNamespace
 
 EOP = " 0eop0 "
 EOS = " 0eos0 "
@@ -16,4 +17,15 @@ TRAINING_SET = os.path.join('data', 'hotpot', 'train.json')
 DEV_DISTRACTOR_SET = os.path.join('data', 'hotpot', 'dev_distractor.json')
 DEV_FULLWIKI_SET = os.path.join('data', 'hotpot', 'dev_fullwiki.json')
 
+FILTERED_DIR = os.path.join('data', 'filtered')
+FILTERED_DB = os.path.join('data', 'filtered', 'db.sqlite')
+FILTER_RESULTS = os.path.join('data', 'filtered', 'results.npy')
 
+SQL = SimpleNamespace()
+SQL.CREATE_TABLE = """
+CREATE TABLE IF NOT EXISTS filtered 
+(id TEXT PRIMARY KEY, type TEXT, level TEXT, target_titles BLOB, result_int_ids BLOB)
+"""
+SQL.INSERT = """
+INSERT INTO filtered VALUES (?, ?, ?, ?, ?)
+"""
