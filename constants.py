@@ -4,8 +4,8 @@ from types import SimpleNamespace
 EOP = " 0eop0 "
 EOS = " 0eos0 "
 
-NO_INDEXES = 32
-CHUNK_SIZE = 1000
+NO_INDEXES = 1
+CHUNK_SIZE = 20
 
 RAW_DATA_DIR = os.path.join('.', 'data', 'raw')
 TREC_CORPUS_DIR = os.path.join('.', 'data', 'trec')
@@ -31,4 +31,7 @@ CREATE TABLE IF NOT EXISTS filtered
 """
 SQL.INSERT = """
 INSERT INTO filtered VALUES (?, ?, ?, ?, ?)
+"""
+SQL.CHECK_EXISTS = """
+SELECT id FROM filtered WHERE id in {}
 """

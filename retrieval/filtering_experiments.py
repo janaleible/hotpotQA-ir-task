@@ -15,6 +15,9 @@ logging.basicConfig(level='INFO')
 
 
 def accuracy(true_positives: int, all_observations: int) -> float:
+    if all_observations == 0 and true_positives == 0:
+        return 0
+
     return true_positives / all_observations
 
 
@@ -29,36 +32,42 @@ def _process_question_batch(question_numbered_batch: List[Question]) -> numpy.nd
     batch_no, question_batch = question_numbered_batch
     index_no = batch_no % constants.NO_INDEXES
 
-    index = Index(index_no)
+    already_processed = {}
     with sqlite3.connect(constants.FILTERED_DB) as db:
         cursor = db.cursor()
+        cursor.execute(constants.SQL.CHECK_EXISTS.format(tuple(map(lambda q: q.id, question_batch))))
+        results = cursor.fetchall()
+        if len(results) == len(question_batch):
+            return found_articles
+        for (q_id,) in results:
+            already_processed[q_id] = True
+        cursor.close()
 
-        for question in question_batch:
-            gold_article_ids = set()
-            [[gold_article_ids.add(index.external2internal(idx)) for idx in index.title2wid[title]] for title in
-             question.gold_articles]
+    index = Index(index_no)
+    for question in question_batch:
+        if already_processed.get(question.id, False):
+            continue
 
-            filtered_articles = unigram_bigram_filter(question.question, index)
+        gold_article_ids = set()
+        [[gold_article_ids.add(index.external2internal(idx)) for idx in index.title2wid[title]] for title in
+         question.gold_articles]
 
-            number_of_articles_found = len(gold_article_ids.intersection(filtered_articles))
+        filtered_articles = unigram_bigram_filter(question.question, index)
 
-            question_type = comparison if question.type == 'comparison' else bridge
-            question_level = hard if question.level == 'hard' else medium if question.level == 'medium' else easy
+        number_of_articles_found = len(gold_article_ids.intersection(filtered_articles))
 
-            found_articles[question_type][question_level][number_of_articles_found] += 1
+        question_type = comparison if question.type == 'comparison' else bridge
+        question_level = hard if question.level == 'hard' else medium if question.level == 'medium' else easy
 
-            try:
-                cursor.execute(constants.SQL.INSERT, (question.id, question.type, question.level,
-                                                      pickle.dumps(question.gold_articles),
-                                                      pickle.dumps(filtered_articles)))
-                db.commit()
-            except Exception as e:
-                print((question.id, question.type, question.level,
-                       pickle.dumps(question.gold_articles),
-                       pickle.dumps(filtered_articles)))
-                print(e)
-
-    index.index.close()
+        found_articles[question_type][question_level][number_of_articles_found] += 1
+        with sqlite3.connect(constants.FILTERED_DB) as db:
+            cursor = db.cursor()
+            cursor.execute(constants.SQL.INSERT, (question.id, question.type, question.level,
+                                                  pickle.dumps(question.gold_articles),
+                                                  pickle.dumps(filtered_articles)))
+            cursor.close()
+            db.commit()
+    del index
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Done filtering {len(question_batch)} questions.]')
 
     return found_articles
@@ -84,8 +93,8 @@ def filter_top_5000():
         db.commit()
 
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Starting filtering.]')
-    for found_articles_batch in map(_process_question_batch,
-                                    enumerate(parallel.chunk(constants.CHUNK_SIZE, training_set))):
+    for found_articles_batch in parallel.execute(_process_question_batch,
+                                                 enumerate(parallel.chunk(constants.CHUNK_SIZE, training_set))):
         found_articles += found_articles_batch
 
     fully_accurate = accuracy(int(numpy.sum(found_articles[:, :, 2])), int(numpy.sum(found_articles[:, :, :])))
