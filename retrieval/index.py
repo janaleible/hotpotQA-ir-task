@@ -54,9 +54,9 @@ class Index(object):
             self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
             self.id2tf = self.index.get_term_frequencies()
 
-        with open(TITLE2WID, 'rb', encoding='utf-8') as file:
+        with open(TITLE2WID, 'rb') as file:
             self.title2wid = pickle.load(file)
-        with open(WID2TITLE, 'rb', encoding='utf-8') as file:
+        with open(WID2TITLE, 'rb') as file:
             self.wid2title = pickle.load(file)
 
         if load_stemmer:

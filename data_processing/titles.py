@@ -31,9 +31,9 @@ def build():
                 for wid in wids:
                     wid2title[wid] = title
 
-    with open(WID2TITLE, 'wb', encoding='utf-8') as file:
+    with open(WID2TITLE, 'wb') as file:
         pickle.dump(wid2title, file)
-    with open(TITLE2WID, 'wb', encoding='utf-8') as file:
+    with open(TITLE2WID, 'wb') as file:
         pickle.dump(title2wid, file)
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tBuilt title maps.')
 
