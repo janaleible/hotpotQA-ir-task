@@ -106,7 +106,7 @@ def _process_doc_triples(doc_triples: List[Tuple[int, str, str]], file_name: str
         file_name = os.path.join(TREC_CORPUS_DIR, f'{doc_triples[0][0]:08d}@{doc_triples[-1][0]:08d}.trectext')
     doc_str = list(zip(*doc_triples))[2]
 
-    with open(file_name, 'w') as file:
+    with open(file_name, 'w', encoding='utf-8') as file:
         file.write("".join(doc_str))
 
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tPersisted {file_name.split("/")[-1]}.')

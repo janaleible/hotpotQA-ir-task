@@ -25,7 +25,7 @@ class Dataset:
         self.questions = []
         self._current_index = 0
 
-        with open(filename, 'r') as file:
+        with open(filename, 'r', encoding='utf-8') as file:
             json_data = json.load(file)
 
         for json_question in json_data:
