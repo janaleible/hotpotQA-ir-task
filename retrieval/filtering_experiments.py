@@ -38,12 +38,15 @@ def _process_question_batch(question_numbered_batch: List[Question]) -> numpy.nd
         cursor.execute(constants.SQL.CHECK_EXISTS.format(tuple(map(lambda q: q.id, question_batch))))
         results = cursor.fetchall()
         if len(results) == len(question_batch):
+            logging.info(
+                f'[{datetime.now()}]\t[{os.getpid()}]\t[Batch {batch_no}. already processed. Results size: {len(results)}. Batch size {question_batch} Skipping.]')
             return found_articles
         for (q_id,) in results:
             already_processed[q_id] = True
         cursor.close()
 
     index = Index(index_no)
+    filtered = 0
     for question in question_batch:
         if already_processed.get(question.id, False):
             continue
@@ -67,8 +70,9 @@ def _process_question_batch(question_numbered_batch: List[Question]) -> numpy.nd
                                                   pickle.dumps(filtered_articles)))
             cursor.close()
             db.commit()
+        filtered += 1
     del index
-    logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Done filtering {len(question_batch)} questions.]')
+    logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Done filtering {filtered} questions.]')
 
     return found_articles
 

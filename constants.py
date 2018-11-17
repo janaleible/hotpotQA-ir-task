@@ -5,7 +5,7 @@ EOP = " 0eop0 "
 EOS = " 0eos0 "
 
 NO_INDEXES = 1
-CHUNK_SIZE = 20
+CHUNK_SIZE = 1000
 
 RAW_DATA_DIR = os.path.join('.', 'data', 'raw')
 TREC_CORPUS_DIR = os.path.join('.', 'data', 'trec')
