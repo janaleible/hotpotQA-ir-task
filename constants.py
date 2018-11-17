@@ -4,7 +4,8 @@ from types import SimpleNamespace
 EOP = " 0eop0 "
 EOS = " 0eos0 "
 
-NO_INDEXES = 2
+NO_INDEXES = 32
+CHUNK_SIZE = 1000
 
 RAW_DATA_DIR = os.path.join('.', 'data', 'raw')
 TREC_CORPUS_DIR = os.path.join('.', 'data', 'trec')

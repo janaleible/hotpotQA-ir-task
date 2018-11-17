@@ -12,7 +12,6 @@ from retrieval.index import Index
 from services import parallel
 
 logging.basicConfig(level='INFO')
-CHUNK_SIZE = 20
 
 
 def accuracy(true_positives: int, all_observations: int) -> float:
@@ -60,7 +59,6 @@ def _process_question_batch(question_numbered_batch: List[Question]) -> numpy.nd
                 print(e)
 
     index.index.close()
-    del index
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Done filtering {len(question_batch)} questions.]')
 
     return found_articles
@@ -86,7 +84,8 @@ def filter_top_5000():
         db.commit()
 
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Starting filtering.]')
-    for found_articles_batch in parallel.execute(_process_question_batch, enumerate(parallel.chunk(CHUNK_SIZE, training_set))):
+    for found_articles_batch in map(_process_question_batch,
+                                    enumerate(parallel.chunk(constants.CHUNK_SIZE, training_set))):
         found_articles += found_articles_batch
 
     fully_accurate = accuracy(int(numpy.sum(found_articles[:, :, 2])), int(numpy.sum(found_articles[:, :, :])))
