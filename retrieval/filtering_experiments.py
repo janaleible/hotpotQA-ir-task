@@ -98,7 +98,7 @@ def filter_top_5000():
 
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Starting filtering.]')
     for found_articles_batch in parallel.execute(_process_question_batch,
-                                                 enumerate(parallel.chunk(constants.CHUNK_SIZE, training_set))):
+                                                 parallel.chunk(constants.CHUNK_SIZE, training_set)):
         found_articles += found_articles_batch
 
     fully_accurate = accuracy(int(numpy.sum(found_articles[:, :, 2])), int(numpy.sum(found_articles[:, :, :])))
