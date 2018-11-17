@@ -39,7 +39,7 @@ def _process_question_batch(question_numbered_batch: List[Question]) -> numpy.nd
         results = cursor.fetchall()
         if len(results) == len(question_batch):
             logging.info(
-                f'[{datetime.now()}]\t[{os.getpid()}]\t[Batch {batch_no}. already processed. Results size: {len(results)}. Batch size {question_batch} Skipping.]')
+                f'[{datetime.now()}]\t[{os.getpid()}]\t[Batch {batch_no}. already processed. Results size: {len(results)}. Batch size {len(question_batch)} Skipping.]')
             return found_articles
         for (q_id,) in results:
             already_processed[q_id] = True
