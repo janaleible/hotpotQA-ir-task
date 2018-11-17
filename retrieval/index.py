@@ -9,7 +9,6 @@ from typing import Dict, List, Tuple
 from xml.etree import ElementTree
 import pickle
 import pyndri
-
 from retrieval.Tokenizer import Tokenizer
 
 logging.basicConfig(level='INFO')
@@ -44,11 +43,11 @@ class Index(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.index.close()
 
-    def __init__(self, load_indri_maps: bool = False, load_stemmer: bool = False):
+    def __init__(self, index_no: int, load_indri_maps: bool = False, load_stemmer: bool = False):
 
         start = datetime.now()
 
-        self.index = pyndri.Index(INDRI_INDEX_DIR)
+        self.index = pyndri.Index(f'{INDRI_INDEX_DIR}_{index_no}')
 
         if load_indri_maps:
             self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
@@ -70,7 +69,7 @@ class Index(object):
         self.tokenizer = Tokenizer()
 
         stop = datetime.now()
-        logging.info(f'Loaded index from {INDRI_INDEX_DIR} with '
+        logging.info(f'Loaded index from {INDRI_INDEX_DIR}_{index_no} with '
                      f'{stemmer.capitalize() if load_stemmer else "NO"} stemmer in {stop - start}.')
 
     def bigram_lookup(self, first: str, second: str) -> List[Tuple[int, float]]:
@@ -114,7 +113,3 @@ class Index(object):
             doc_str = doc_str.replace(EOP, '\n\n').replace(EOS, '')
 
         return doc_str
-
-
-if __name__ == '__main__':
-    index = Index()

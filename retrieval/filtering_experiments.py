@@ -19,8 +19,7 @@ def accuracy(true_positives: int, all_observations: int) -> float:
     return true_positives / all_observations
 
 
-def _process_question_batch(question_batch: List[Question]) -> numpy.ndarray:
-    index = Index()
+def _process_question_batch(question_numbered_batch: List[Question]) -> numpy.ndarray:
     comparison = 0
     bridge = 1
     hard = 0
@@ -28,7 +27,10 @@ def _process_question_batch(question_batch: List[Question]) -> numpy.ndarray:
     easy = 2
     found_articles = numpy.zeros((2, 3, 3))
 
-    data = []
+    batch_no, question_batch = question_numbered_batch
+    index_no = batch_no % constants.NO_INDEXES
+
+    index = Index(index_no)
     with sqlite3.connect(constants.FILTERED_DB) as db:
         cursor = db.cursor()
 
@@ -57,10 +59,8 @@ def _process_question_batch(question_batch: List[Question]) -> numpy.ndarray:
                        pickle.dumps(filtered_articles)))
                 print(e)
 
-            data.append((question.id, question.type, question.level,
-                         pickle.dumps(question.gold_articles),
-                         pickle.dumps(filtered_articles)))
-
+    index.index.close()
+    del index
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Done filtering {len(question_batch)} questions.]')
 
     return found_articles
@@ -86,7 +86,7 @@ def filter_top_5000():
         db.commit()
 
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Starting filtering.]')
-    for found_articles_batch in parallel.execute(_process_question_batch, parallel.chunk(CHUNK_SIZE, training_set)):
+    for found_articles_batch in parallel.execute(_process_question_batch, enumerate(parallel.chunk(CHUNK_SIZE, training_set))):
         found_articles += found_articles_batch
 
     fully_accurate = accuracy(int(numpy.sum(found_articles[:, :, 2])), int(numpy.sum(found_articles[:, :, :])))
@@ -117,8 +117,4 @@ def filter_top_5000():
 
 
 if __name__ == '__main__':
-    try:
-        filter_top_5000()
-    except Exception as error:
-        INDEX.index.close()
-        raise
+    filter_top_5000()
