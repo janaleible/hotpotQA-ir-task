@@ -17,6 +17,10 @@ TRAINING_SET = os.path.join('data', 'hotpot', 'train.json')
 DEV_DISTRACTOR_SET = os.path.join('data', 'hotpot', 'dev_distractor.json')
 DEV_FULLWIKI_SET = os.path.join('data', 'hotpot', 'dev_fullwiki.json')
 
+TRECEVAL_REFERENCE_DIR = os.path.join('data', 'trec_eval', 'reference')
+TRECEVAL_REFERENCE_TRAIN = os.path.join('data', 'trec_eval', 'reference', 'train_reference.json')
+TRECEVAL_REFERENCE_DEV = os.path.join('data', 'trec_eval', 'reference', 'dev_reference.json')
+
 FILTERED_DIR = os.path.join('data', 'filtered')
 FILTERED_DB = os.path.join('data', 'filtered', 'db.sqlite')
 FILTER_RESULTS = os.path.join('data', 'filtered', 'results.npy')
