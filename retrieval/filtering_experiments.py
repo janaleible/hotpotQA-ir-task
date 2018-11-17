@@ -13,7 +13,6 @@ from services import parallel
 
 logging.basicConfig(level='INFO')
 CHUNK_SIZE = 20
-INDEX = Index()
 
 
 def accuracy(true_positives: int, all_observations: int) -> float:
@@ -21,6 +20,7 @@ def accuracy(true_positives: int, all_observations: int) -> float:
 
 
 def _process_question_batch(question_batch: List[Question]) -> numpy.ndarray:
+    index = Index()
     comparison = 0
     bridge = 1
     hard = 0
@@ -34,10 +34,10 @@ def _process_question_batch(question_batch: List[Question]) -> numpy.ndarray:
 
         for question in question_batch:
             gold_article_ids = set()
-            [[gold_article_ids.add(INDEX.external2internal(idx)) for idx in INDEX.title2wid[title]] for title in
+            [[gold_article_ids.add(index.external2internal(idx)) for idx in index.title2wid[title]] for title in
              question.gold_articles]
 
-            filtered_articles = unigram_bigram_filter(question.question, INDEX)
+            filtered_articles = unigram_bigram_filter(question.question, index)
 
             number_of_articles_found = len(gold_article_ids.intersection(filtered_articles))
 
