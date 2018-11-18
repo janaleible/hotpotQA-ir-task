@@ -4,18 +4,11 @@ from typing import Callable, Iterable
 
 
 def chunk(n, iterable):
-    it = iter(iterable)
-    if n > len(iterable):
-        yield tuple(it)
-
-        return
-
-    while True:
-        ch = tuple(itertools.islice(it, n))
-        if not ch:
-            return
-
-        yield ch
+    """Collect data into fixed-length chunks or blocks
+            grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
+        """
+    args = [iter(iterable)] * n
+    return itertools.zip_longest(*args, fillvalue=None)
 
 
 def execute(func: Callable, items: Iterable):

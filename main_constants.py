@@ -4,7 +4,7 @@ import os
 EOP = " 0eop0 "
 EOS = " 0eos0 "
 
-CHUNK_SIZE = 1000
+CHUNK_SIZE = 50
 
 RAW_DATA_DIR = os.path.join('.', 'data', 'raw')
 TREC_CORPUS_DIR = os.path.join('.', 'data', 'trec')

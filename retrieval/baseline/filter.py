@@ -28,7 +28,7 @@ def top_5000():
         cursor = db.cursor()
         cursor.execute(SQL.CREATE_TABLE)
         db.commit()
-    batches = list(enumerate(parallel.chunk(CHUNK_SIZE, training_set)))
+    batches = list(enumerate(parallel.chunk(CHUNK_SIZE, training_set.questions)))
     no_batches = len(batches)
     no_docs = len(training_set)
     no_filtered = 0
@@ -57,6 +57,8 @@ def _process_question_batch(question_numbered_batch: Tuple[int, Tuple[Question]]
         return 0
 
     for question in question_batch:
+        if question is None:
+            continue
         if already_processed.get(question.id, False):
             continue
 

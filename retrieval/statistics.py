@@ -60,6 +60,7 @@ def _fetch_prediction(conn: sqlite3.Connection, question: Question) -> List[int]
     cursor = conn.cursor()
     cursor.execute(SQL.FETCH_ONE_RESULT, (question.id,))
     (prediction,) = cursor.fetchone()
+    cursor.close()
 
     return pickle.loads(prediction)
 
