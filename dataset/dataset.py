@@ -3,7 +3,6 @@ from main_constants import *
 import json
 
 
-
 class Question(object):
 
     def __init__(self, _id: str, question: str, answer: str, _type: str, level: str, context: List[List],
@@ -59,8 +58,25 @@ class Dataset(object):
     def __len__(self):
         return len(self.questions)
 
+    def get_treceval_reference(self) -> Dict[str, Dict[str, int]]:
+
+        reference = {}
+        # TODO: think about which id to use, currently uses titles as strings
+        for question in self:
+            relevant_docs = {}
+            for document in question.gold_articles:
+                relevant_docs[document] = 1
+            reference[question.id] = relevant_docs
+
+        return reference
+
 
 if __name__ == '__main__':
-    training_set = Dataset(TRAINING_SET, max_questions=50)
-    for qs in training_set:
-        print(qs.question)
+
+    os.makedirs(TRECEVAL_REFERENCE_DIR, exist_ok=True)
+
+    for data_file, reference_file in zip([TRAINING_SET,             DEV_FULLWIKI_SET],
+                                         [TRECEVAL_REFERENCE_TRAIN, TRECEVAL_REFERENCE_DEV]):
+        data_set = Dataset(data_file)
+        with open(reference_file, 'w') as file:
+            json.dump(data_set.get_treceval_reference(), file, indent=True)

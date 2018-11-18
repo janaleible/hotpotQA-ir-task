@@ -20,6 +20,18 @@ TRAINING_SET = os.path.join('data', 'hotpot', 'train.json')
 DEV_DISTRACTOR_SET = os.path.join('data', 'hotpot', 'dev_distractor.json')
 DEV_FULLWIKI_SET = os.path.join('data', 'hotpot', 'dev_fullwiki.json')
 
+TRECEVAL_REFERENCE_DIR = os.path.join('data', 'trec_eval', 'reference')
+TRECEVAL_REFERENCE_TRAIN = os.path.join('data', 'trec_eval', 'reference', 'train_reference.json')
+TRECEVAL_REFERENCE_DEV = os.path.join('data', 'trec_eval', 'reference', 'dev_reference.json')
+
+TRECEVAL_RESULTS_DIR = os.path.join('data', 'trec_eval', 'results')
+TRECEVAL_RESULTS_TRAIN = os.path.join('data', 'trec_eval', 'results', 'train_results.json')
+TRECEVAL_RESULTS_DEV = os.path.join('data', 'trec_eval', 'results', 'dev_results.json')
+
+TRECEVAL_EVALUATION_DIR = os.path.join('data', 'trec_eval', 'evaluation')
+TRECEVAL_EVALUATION_TRAIN = os.path.join('data', 'trec_eval', 'evaluation', 'train_evaluation.json')
+TRECEVAL_EVALUATION_DEV = os.path.join('data', 'trec_eval', 'evaluation', 'dev_evaluation.json')
+
 FILTERED_DIR = os.path.join('data', 'filtered')
 BASELINE_FILTERED_DB = os.path.join('data', 'filtered', 'baseline.sqlite')
 
