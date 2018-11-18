@@ -35,6 +35,7 @@ def accuracies(dataset: str, database: str):
                 continue
 
             (prediction,) = prediction
+            prediction = pickle.loads(prediction)
             _update_hits(prediction, target, question, hits)
 
         full, half, full_hard, full_medium, full_easy, full_comparison, full_bridge = _accuracies(hits)
