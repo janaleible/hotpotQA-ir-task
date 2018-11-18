@@ -4,7 +4,6 @@ import os
 EOP = " 0eop0 "
 EOS = " 0eos0 "
 
-NO_INDEXES = 1
 CHUNK_SIZE = 1000
 
 RAW_DATA_DIR = os.path.join('.', 'data', 'raw')
@@ -16,8 +15,8 @@ TITLE2WID = os.path.join('.', 'data', 'index', 'title2wid.tar')
 INDRI_INDEX_DIR = os.path.join('.', 'data', 'index', 'indri')
 INDRI_PARAMETERS = 'index.xml'
 
-TRAINING_SET = os.path.join('data', 'hotpot', 'train_100.json')
-# TRAINING_SET = os.path.join('data', 'hotpot', 'train.json')
+# TRAINING_SET = os.path.join('data', 'hotpot', 'train_100.json')
+TRAINING_SET = os.path.join('data', 'hotpot', 'train.json')
 DEV_DISTRACTOR_SET = os.path.join('data', 'hotpot', 'dev_distractor.json')
 DEV_FULLWIKI_SET = os.path.join('data', 'hotpot', 'dev_fullwiki.json')
 
