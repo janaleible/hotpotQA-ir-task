@@ -1,4 +1,4 @@
-from constants import RAW_DATA_DIR, INDEX_DIR, WID2TITLE, TITLE2WID
+from main_constants import RAW_DATA_DIR, INDEX_DIR, WID2TITLE, TITLE2WID
 from datetime import datetime
 from services import parallel
 from typing import Dict, List

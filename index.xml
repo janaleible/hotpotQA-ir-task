@@ -3,12 +3,12 @@
     <path>./data/trec</path>
     <class>trectext</class>
   </corpus>
-  <index>./data/index/indri</index>
+  <index>./data/index/indri_0</index>
   <field>
     <name>TITLE</name>
     <numeric>false</numeric>
   </field>
-  <memory>2G</memory>
+  <memory>10G</memory>
   <stemmer>
     <name>porter</name>
   </stemmer>

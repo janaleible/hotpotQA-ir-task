@@ -1,10 +1,9 @@
-import json
 from typing import List, Dict
+from main_constants import *
+import json
 
-from constants import *
 
-
-class Question:
+class Question(object):
 
     def __init__(self, _id: str, question: str, answer: str, _type: str, level: str, context: List[List],
                  supporting_facts: List[List]) -> None:
@@ -18,14 +17,14 @@ class Question:
         self.context: Dict[str, List[str]] = {article[0]: article[1] for article in context}
 
 
-class Dataset:
+class Dataset(object):
 
     def __init__(self, filename: str, max_questions: int = None) -> None:
 
         self.questions = []
         self._current_index = 0
 
-        with open(filename, 'r') as file:
+        with open(filename, 'r', encoding='utf-8') as file:
             json_data = json.load(file)
 
         for json_question in json_data:
