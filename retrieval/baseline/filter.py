@@ -76,6 +76,9 @@ def _check_already_processed(question_numbered_batch: Tuple[int, Tuple[Question]
     already_processed = {}
     with sqlite3.connect(BASELINE_FILTERED_DB) as db:
         for question in question_batch:
+            if question is None:
+                continue
+
             cursor = db.cursor()
             cursor.execute(SQL.CHECK_EXISTS, (question.id,))
             exists = cursor.fetchone()

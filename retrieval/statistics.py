@@ -31,6 +31,10 @@ def accuracies(dataset: str, database: str):
         for question in tqdm(dataset, unit='questions'):
             target = _extract_target(question)
             prediction = _fetch_prediction(conn, question)
+            if prediction is None:
+                continue
+
+            (prediction,) = prediction
             _update_hits(prediction, target, question, hits)
 
         full, half, full_hard, full_medium, full_easy, full_comparison, full_bridge = _accuracies(hits)
@@ -59,10 +63,10 @@ def _extract_target(question: Question) -> Set[int]:
 def _fetch_prediction(conn: sqlite3.Connection, question: Question) -> List[int]:
     cursor = conn.cursor()
     cursor.execute(SQL.FETCH_ONE_RESULT, (question.id,))
-    (prediction,) = cursor.fetchone()
+    prediction = cursor.fetchone()
     cursor.close()
 
-    return pickle.loads(prediction)
+    return prediction
 
 
 def _update_hits(prediction: List[int], target: Set[int], question: Question, hits: np.ndarray) -> None:
