@@ -1,5 +1,5 @@
-import argparse
 from data_processing import trec, titles, index
+import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

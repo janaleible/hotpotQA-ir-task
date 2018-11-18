@@ -2,7 +2,7 @@ import os
 import subprocess
 from datetime import datetime
 
-from constants import NO_INDEXES
+from main_constants import NO_INDEXES
 from services import parallel
 import logging
 

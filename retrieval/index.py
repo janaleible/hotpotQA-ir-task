@@ -1,15 +1,14 @@
-import logging
-from datetime import datetime
-
-import nltk
-from nltk import StemmerI
-
-from constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS
+from main_constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS
+from retrieval.tokenizer import Tokenizer
 from typing import Dict, List, Tuple
 from xml.etree import ElementTree
-import pickle
+from datetime import datetime
+from nltk import StemmerI
+import logging
 import pyndri
-from retrieval.Tokenizer import Tokenizer
+import pickle
+import nltk
+import os
 
 logging.basicConfig(level='INFO')
 
@@ -43,21 +42,18 @@ class Index(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.index.close()
 
-    def __init__(self, index_no: int, load_indri_maps: bool = False, load_stemmer: bool = False):
-
+    def __init__(self, load_indri_maps: bool = False, load_stemmer: bool = False):
+        logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Loading index {INDRI_INDEX_DIR}]')
         start = datetime.now()
 
-        self.index = pyndri.Index(f'{INDRI_INDEX_DIR}_{index_no}')
-
+        self.index = pyndri.Index(f'{INDRI_INDEX_DIR}')
         if load_indri_maps:
             self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
             self.id2tf = self.index.get_term_frequencies()
-
         with open(TITLE2WID, 'rb') as file:
             self.title2wid = pickle.load(file)
         with open(WID2TITLE, 'rb') as file:
             self.wid2title = pickle.load(file)
-
         if load_stemmer:
             tree = ElementTree.parse('build_indri_index.xml')
             stemmer: str = tree.find('stemmer').find('name').text
@@ -65,12 +61,10 @@ class Index(object):
                 self.stemmer = nltk.stem.porter.PorterStemmer()
             else:
                 raise ValueError('Unknown stemmer selected')
-
         self.tokenizer = Tokenizer()
 
         stop = datetime.now()
-        logging.info(f'Loaded index from {INDRI_INDEX_DIR}_{index_no} with '
-                     f'{stemmer.capitalize() if load_stemmer else "NO"} stemmer in {stop - start}.')
+        logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Loaded index in {stop - start}.]')
 
     def bigram_lookup(self, first: str, second: str) -> List[Tuple[int, float]]:
         """Retrieve documents according to bigram full text search."""

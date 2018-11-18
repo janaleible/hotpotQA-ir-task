@@ -1,10 +1,10 @@
+from retrieval.index import Index
 from collections import Counter
+from typing import List
 import nltk
 
-from retrieval.index import Index
 
-
-def unigram_bigram_filter(query: str, index: Index, n: int = 5000):
+def bigram_unigram_5000(query: str, index: Index, n: int = 5000) -> List[int]:
     """ Retrieves the at most n candidates from the full set of articles based on query-document pair bigram/unigram
     matches. Uses pre-built inverted index. Assumed to be equivalent to Algorithm 2, Appendix C of HotpotQA paper.
     Possible mismatches:

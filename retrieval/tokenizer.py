@@ -1,22 +1,19 @@
-import string
+from main_constants import INDRI_PARAMETERS
 from typing import Set, List, Dict
 from xml.etree import ElementTree
-
-import nltk
 from unidecode import unidecode
+import string
+import nltk
 
 
 class Tokenizer:
-
     stopwords: Set[str]
     punctuation: Dict[int, int]
 
     def __init__(self) -> None:
-
-        tree = ElementTree.parse('build_indri_index.xml')
+        tree = ElementTree.parse(INDRI_PARAMETERS)
 
         stopwords = set()
-
         for elem in tree.find('stopper').iter('word'):
             stopwords.add(elem.text)
         self.stopwords = frozenset(stopwords)

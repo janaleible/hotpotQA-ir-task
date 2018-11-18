@@ -1,6 +1,6 @@
 """This module builds the TREC corpus that will be passed to the Indri index. Read on for important details."""
 
-from constants import EOP, EOS, RAW_DATA_DIR, TREC_CORPUS_DIR
+from main_constants import EOP, EOS, RAW_DATA_DIR, TREC_CORPUS_DIR
 from typing import Dict, Any, Tuple, List
 from datetime import datetime
 from services import parallel
