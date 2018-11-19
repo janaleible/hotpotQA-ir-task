@@ -70,6 +70,13 @@ class Dataset(object):
 
         return reference
 
+    def find_by_id(self, _id) -> Question:
+
+        candidates = list(filter(lambda question: question.id == _id, self.questions))
+
+        if not len(candidates) == 1: raise IndexError
+        return candidates[0]
+
     def filter_by_level(self, level: str) -> List[Question]:
         return list(filter(lambda question: question.level == level, self.questions))
 
