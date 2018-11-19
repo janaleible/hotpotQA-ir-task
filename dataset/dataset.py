@@ -70,6 +70,12 @@ class Dataset(object):
 
         return reference
 
+    def filter_by_level(self, level: str) -> List[Question]:
+        return list(filter(lambda question: question.level == level, self.questions))
+
+    def filter_by_type(self, type: str) -> List[Question]:
+        return list(filter(lambda question: question.type == type, self.questions))
+
 
 if __name__ == '__main__':
 
