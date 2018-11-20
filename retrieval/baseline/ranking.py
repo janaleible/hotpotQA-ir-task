@@ -48,6 +48,9 @@ def tfidf(dataset: Dataset):
 
 def evaluate(dataset: Dataset, results_path: str, reference_path: str, evaluation_path: str, tfidf_fn=tfidf):
 
+    os.makedirs(c.TRECEVAL_RESULTS_DIR, exist_ok=True)
+    os.makedirs(c.TRECEVAL_EVALUATION_DIR, exist_ok=True)
+
     run = tfidf_fn(dataset)
 
     with open(results_path, 'w') as run_file:
