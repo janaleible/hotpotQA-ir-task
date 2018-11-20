@@ -22,7 +22,7 @@ class Tokenizer:
 
     def tokenize(self, s: str) -> List[str]:
         normalized = self.normalize(s)
-        tokenized = [token for token in nltk.word_tokenize(normalized) if token not in self.stopwords]
+        tokenized = [token for token in nltk.word_tokenize(normalized) if token.lower() not in self.stopwords]
         return tokenized
 
     def normalize(self, s: str) -> str:
