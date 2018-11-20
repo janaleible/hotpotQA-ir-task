@@ -5,6 +5,7 @@ from typing import Dict
 import pytrec_eval
 
 import main_constants as c
+from dataset.dataset import Dataset
 
 
 class Run(dict):
@@ -24,6 +25,8 @@ class Evaluator:
 
     def __init__(self, reference_path: str, measures: set = frozenset({'map', 'ndcg'})) -> None:
 
+        Evaluator.create_reference_files(exists_ok=True)
+
         with open(reference_path, 'r') as reference_file:
             reference = json.load(reference_file)
             self._evaluator = pytrec_eval.RelevanceEvaluator(reference, set(measures))
@@ -31,6 +34,18 @@ class Evaluator:
     def evaluate(self, run: Run) -> Dict[str, Dict[str, float]]:
 
         return self._evaluator.evaluate(run)
+
+    @staticmethod
+    def create_reference_files(exists_ok=False):
+
+        os.makedirs(c.TRECEVAL_REFERENCE_DIR, exist_ok=True)
+
+        for data_file, reference_file in zip([c.TRAINING_SET, c.DEV_FULLWIKI_SET],
+                                             [c.TRECEVAL_REFERENCE_TRAIN, c.TRECEVAL_REFERENCE_DEV]):
+            if not os.path.isfile(reference_file) or not exists_ok:
+                data_set = Dataset.from_file(data_file)
+                with open(reference_file, 'w') as file:
+                    json.dump(data_set.get_treceval_reference(), file, indent=True)
 
 
 if __name__ == '__main__':

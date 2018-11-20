@@ -92,12 +92,3 @@ class Dataset(object):
         return list(filter(lambda question: question.type == type, self.questions))
 
 
-if __name__ == '__main__':
-
-    os.makedirs(TRECEVAL_REFERENCE_DIR, exist_ok=True)
-
-    for data_file, reference_file in zip([TRAINING_SET,             DEV_FULLWIKI_SET],
-                                         [TRECEVAL_REFERENCE_TRAIN, TRECEVAL_REFERENCE_DEV]):
-        data_set = Dataset.from_file(data_file)
-        with open(reference_file, 'w') as file:
-            json.dump(data_set.get_treceval_reference(), file, indent=True)
