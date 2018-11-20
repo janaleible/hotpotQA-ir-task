@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 
 import pyndri
-from tqdm import tqdm
 
 from dataset.dataset import Dataset
 import main_constants as c
@@ -37,6 +36,8 @@ def tfidf(dataset: Dataset):
 
     try:
         for question in dataset:
+            if question is None:
+                continue
 
             tokenized = ' '.join(tokenizer.tokenize(question.question))
             result = tfidf_query_env.query(tokenized)
