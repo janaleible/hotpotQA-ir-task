@@ -1,5 +1,7 @@
 import json
+import logging
 import os
+from datetime import datetime
 
 import pyndri
 from tqdm import tqdm
@@ -11,12 +13,15 @@ from retrieval.index import Index
 from retrieval.tokenizer import Tokenizer
 from services import parallel
 
+INDEX: Index
+
 
 def parallel_tfidf(dataset: Dataset):
-
+    global INDEX
+    INDEX = Index()
     full_run = Run()
 
-    batches = list(parallel.chunk(c.CHUNK_SIZE, dataset.questions))
+    batches = list(enumerate(parallel.chunk(c.CHUNK_SIZE, dataset.questions)))
     for partial_run in parallel.execute(tfidf, batches):
         full_run.update(partial_run)
 
@@ -24,25 +29,26 @@ def parallel_tfidf(dataset: Dataset):
 
 
 def tfidf(dataset: Dataset):
+    batch_no, dataset = dataset
 
-    index = Index()
-    tfidf_query_env = pyndri.TFIDFQueryEnvironment(index.index)
+    tfidf_query_env = pyndri.TFIDFQueryEnvironment(INDEX.index)
     tokenizer = Tokenizer()
     run = Run()
 
     try:
-        for question in tqdm(dataset, unit='questions'):
+        for question in dataset:
 
             tokenized = ' '.join(tokenizer.tokenize(question.question))
             result = tfidf_query_env.query(tokenized)
 
-            ranking = {index.wid2title[index.internal2external(_id)]: float(score)
+            ranking = {INDEX.wid2title[INDEX.internal2external(_id)]: float(score)
                        for (_id, _), score in zip(result[:10], reversed(range(1, 11)))}
 
             run.add_question(question.id, ranking)
     except KeyboardInterrupt:
         print(run)
 
+    logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Finished processing batch {batch_no}.]')
     return run
 
 
