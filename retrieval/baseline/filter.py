@@ -23,7 +23,7 @@ def top_5000():
     logging.info(f'{__log()}[Loading dataset in chunks.]\t[Data file: {TRAINING_SET}]\t[Chunk size: {CHUNK_SIZE}]')
     start = datetime.now()
     os.makedirs(FILTERED_DIR, exist_ok=True)
-    training_set = Dataset(TRAINING_SET)
+    training_set = Dataset.from_file(TRAINING_SET)
     with sqlite3.connect(BASELINE_FILTERED_DB) as db:
         cursor = db.cursor()
         cursor.execute(SQL.CREATE_TABLE)
