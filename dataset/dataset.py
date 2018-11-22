@@ -24,7 +24,6 @@ class Dataset(object):
         self.questions = []
         self._current_index = 0
 
-
     @staticmethod
     def from_file(filename: str, max_questions: int = None):
 

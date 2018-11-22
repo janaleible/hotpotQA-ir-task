@@ -4,7 +4,7 @@ import os
 EOP = " 0eop0 "
 EOS = " 0eos0 "
 
-CHUNK_SIZE = 50
+CHUNK_SIZE = 10
 
 RAW_DATA_DIR = os.path.join('.', 'data', 'raw')
 TREC_CORPUS_DIR = os.path.join('.', 'data', 'trec')
@@ -12,11 +12,17 @@ TREC_CORPUS_DIR = os.path.join('.', 'data', 'trec')
 INDEX_DIR = os.path.join('.', 'data', 'index')
 WID2TITLE = os.path.join('.', 'data', 'index', 'wid2title.tar')
 TITLE2WID = os.path.join('.', 'data', 'index', 'title2wid.tar')
-INDRI_INDEX_DIR = os.path.join('.', 'data', 'index', 'indri')
-INDRI_PARAMETERS = 'index.xml'
 
-# TRAINING_SET = os.path.join('data', 'hotpot', 'train_100.json')
-TRAINING_SET = os.path.join('data', 'hotpot', 'train.json')
+# WITHOUT STEMMING AND STOPPING
+INDRI_PARAMETERS = 'index.xml'
+INDRI_INDEX_DIR = os.path.join('.', 'data', 'index', 'indri')
+
+# WITH STEMMING AND STOPPING
+# INDRI_PARAMETERS = 'index_stop_stem.xml'
+# INDRI_INDEX_DIR = os.path.join('.', 'data', 'index', 'indri_stop_stem')
+
+TRAINING_SET = os.path.join('data', 'hotpot', 'train_100.json')
+# TRAINING_SET = os.path.join('data', 'hotpot', 'train.json')
 DEV_DISTRACTOR_SET = os.path.join('data', 'hotpot', 'dev_distractor.json')
 DEV_FULLWIKI_SET = os.path.join('data', 'hotpot', 'dev_fullwiki.json')
 
