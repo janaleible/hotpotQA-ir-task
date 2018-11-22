@@ -1,5 +1,8 @@
-from main_constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS
-from retrieval.tokenizer import Tokenizer
+import string
+
+from unidecode import unidecode
+
+from main_constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS, INDRI_PARAMETERS
 from typing import Dict, List, Tuple
 from xml.etree import ElementTree
 from datetime import datetime
@@ -32,7 +35,6 @@ class Index(object):
     wid2title: Dict[int, str]
 
     stemmer: StemmerI
-    tokenizer: Tokenizer
 
     def __enter__(self, **kwargs):
         idx = self.__init__(**kwargs)
@@ -61,19 +63,31 @@ class Index(object):
                 self.stemmer = nltk.stem.porter.PorterStemmer()
             else:
                 raise ValueError('Unknown stemmer selected')
-        self.tokenizer = Tokenizer()
+
+        tree = ElementTree.parse(INDRI_PARAMETERS)
+        if INDRI_PARAMETERS.split('/')[-1] == 'indri_stop_stem.xml':
+            logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Loading stopwords.]')
+            stopwords = set()
+            for elem in tree.find('stopper').iter('word'):
+                stopwords.add(elem.text)
+            self.stopwords = frozenset(stopwords)
+        elif INDRI_PARAMETERS.split('/')[-1] == 'index.xml':
+            logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Not loading stopwords.]')
+        else:
+            raise NotImplementedError(f'Unknown index setting: {INDRI_PARAMETERS.split("/")[-1]}')
+        self.punctuation = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
         stop = datetime.now()
         logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Loaded index in {stop - start}.]')
 
     def bigram_lookup(self, first: str, second: str) -> List[Tuple[int, float]]:
         """Retrieve documents according to bigram full text search."""
-        return self.index.query(f'#1({self.tokenizer.normalize(first)} {self.tokenizer.normalize(second)})',
+        return self.index.query(f'#1({self.normalize(first)} {self.normalize(second)})',
                                 results_requested=65500)
 
     def unigram_lookup(self, first: str) -> List[Tuple[int, float]]:
         """Retrieve documents according to unigram text search."""
-        return self.index.query(f'{self.tokenizer.normalize(first)}', results_requested=65500)
+        return self.index.query(f'{self.normalize(first)}', results_requested=65500)
 
     def title_lookup(self, title) -> List[Tuple[int, float]]:
         """Retrieve documents according to unigram title only search."""
@@ -89,6 +103,22 @@ class Index(object):
 
     def external2internal(self, external: int) -> int:
         return self.index.document_ids([str(external)])[0][1]
+
+    def tokenize(self, s: str) -> List[str]:
+        normalized = self.normalize(s)
+        if INDRI_PARAMETERS.split('/')[-1] == 'indri_stop_stem.xml':
+            tokenized = [token.lower() for token in nltk.word_tokenize(normalized) if
+                         token.lower() not in self.stopwords]
+        else:
+            tokenized = [token.lower() for token in nltk.word_tokenize(normalized)]
+
+        return tokenized
+
+    def normalize(self, s: str) -> str:
+        s = unidecode(s)
+        s = s.translate(self.punctuation)
+
+        return s
 
     def inspect_document(self, doc: Tuple[str, Tuple[int]], include_stop: bool, format_paragraph: bool) -> str:
         """Reproduce the stemmed document stored by indri as a string.
