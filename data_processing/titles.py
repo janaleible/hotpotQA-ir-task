@@ -1,6 +1,6 @@
 from main_constants import RAW_DATA_DIR, INDEX_DIR, WID2TITLE, TITLE2WID
 from datetime import datetime
-from services import parallel
+from services import parallel, helpers
 from typing import Dict, List
 from glob import glob
 import logging
@@ -21,14 +21,17 @@ def build():
     wid2title = {}
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tBuilding title maps.')
     for group_title2wid in parallel.execute(_build_group_title_map, folder_paths):
-        for (title, wids) in group_title2wid.items():
+        for (title, wid) in group_title2wid.items():
             if title2wid.get(title, None) is None:
-                title2wid[title] = wids
-                for wid in wids:
-                    wid2title[wid] = title
+                title2wid[title] = wid
+                wid2title[wid] = title
             else:
-                title2wid[title].extend(wids)
-                for wid in wids:
+                # Hack for taking care of the double title that points to a proper article and to a disambiguation
+                # article. Assumes the only article of interest is the one that is not a disambiguation one.
+                helpers.log(f'Title {title} has the WID {title2wid.get(title)}. Current WID: {wid}.')
+                if wid == 2209045:
+                    helpers.log(f'Replacing WID {title2wid.get(title)} with WID {wid}.')
+                    title2wid[title] = wid
                     wid2title[wid] = title
 
     with open(WID2TITLE, 'wb') as file:
@@ -40,8 +43,8 @@ def build():
     return
 
 
-def _build_group_title_map(folder_path: str):
-    title2wid: Dict[str, List[int]] = {}
+def _build_group_title_map(folder_path: str) -> Dict[str, int]:
+    title2wid: Dict[str, int] = {}
 
     file_paths = sorted(glob(os.path.join(folder_path, '*.bz2')))
     for file_path in file_paths:
@@ -51,10 +54,14 @@ def _build_group_title_map(folder_path: str):
                 doc_wid, doc_title = int(doc['id']), doc['title']
 
                 if title2wid.get(doc_title, None) is None:
-                    title2wid[doc_title] = [doc_wid]
+                    title2wid[doc_title] = doc_wid
                 else:
-                    title2wid[doc_title].append(doc_wid)
+                    # Hack for taking care of the double title that points to a proper article and to a disambiguation
+                    # article. Assumes the only article of interest is the one that is not a disambiguation one.
+                    helpers.log(f'Title {doc_title} has the WID {title2wid.get(doc_title)}. Current WID: {doc_wid}.')
+                    if doc_wid == 2209045:
+                        helpers.log(f'Replacing WID {title2wid.get(doc_title)} with WID {doc_wid}.')
+                        title2wid[doc_title] = doc_wid
 
     logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tBuilt title maps for folder {folder_path.split("/")[-1]}.')
-
     return title2wid

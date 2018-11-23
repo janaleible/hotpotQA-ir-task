@@ -2,7 +2,8 @@
 Contains:
     -- packages for baseline and more advanced systems.
     -- an interface to the Indri index using pyndri in ``index.py`.
-    -- a tokenizer to convert queries to a format acceptable by pyndri in ``tokenizer.py``
 """
 
 from retrieval import baseline
+from retrieval import filters
+from retrieval import evaluate

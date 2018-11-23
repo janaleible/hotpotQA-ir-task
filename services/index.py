@@ -2,18 +2,14 @@ import string
 
 from unidecode import unidecode
 
-from main_constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS, INDRI_PARAMETERS
-from typing import Dict, List, Tuple
+from main_constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS, INDRI_PARAMETERS, WID2INT, INT2WID
+from typing import Dict, List, Tuple, Union, Set
 from xml.etree import ElementTree
 from datetime import datetime
-from nltk import StemmerI
-import logging
+from services import helpers
 import pyndri
 import pickle
 import nltk
-import os
-
-logging.basicConfig(level='INFO')
 
 
 class Index(object):
@@ -31,99 +27,119 @@ class Index(object):
     id2df: Dict[int, int]
     id2tf: Dict[int, int]
 
-    title2wid: Dict[str, List[int]]
+    title2wid: Dict[str, int]
     wid2title: Dict[int, str]
+    int2wid: Dict[int, int]
+    wid2int: Dict[int, int]
 
-    stemmer: StemmerI
+    stopwords: Union[Set, None]
 
     def __enter__(self, **kwargs):
-        idx = self.__init__(**kwargs)
+        idx = self.__init__()
 
         return idx
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.index.close()
+        del self
 
-    def __init__(self, load_indri_maps: bool = False, load_stemmer: bool = False):
-        logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Loading index {INDRI_INDEX_DIR}]')
+    def __init__(self, env: str = 'default'):
+        helpers.log(f'Loading index {INDRI_INDEX_DIR} with {env}')
         start = datetime.now()
 
         self.index = pyndri.Index(f'{INDRI_INDEX_DIR}')
-        if load_indri_maps:
-            self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
-            self.id2tf = self.index.get_term_frequencies()
+        self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
+        self.id2tf = self.index.get_term_frequencies()
         with open(TITLE2WID, 'rb') as file:
             self.title2wid = pickle.load(file)
         with open(WID2TITLE, 'rb') as file:
             self.wid2title = pickle.load(file)
-        if load_stemmer:
-            tree = ElementTree.parse('build_indri_index.xml')
-            stemmer: str = tree.find('stemmer').find('name').text
-            if stemmer == 'porter':
-                self.stemmer = nltk.stem.porter.PorterStemmer()
-            else:
-                raise ValueError('Unknown stemmer selected')
+        with open(WID2INT, 'rb') as file:
+            self.wid2int = pickle.load(file)
+        with open(INT2WID, 'rb') as file:
+            self.int2wid = pickle.load(file)
+
+        if env == 'default':
+            self.env = pyndri.QueryEnvironment(self.index)
+        elif env == 'tfidf':
+            self.env = pyndri.TFIDFQueryEnvironment(self.index, k1=1.2, b=0.75)
+        elif env == 'prf':
+            env = pyndri.QueryEnvironment(self.index)
+            self.env = pyndri.PRFQueryEnvironment(env, fb_docs=10, fb_terms=10)
+        else:
+            raise ValueError(f'Unknown environment configuration {env}')
 
         tree = ElementTree.parse(INDRI_PARAMETERS)
         if INDRI_PARAMETERS.split('/')[-1] == 'indri_stop_stem.xml':
-            logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Loading stopwords.]')
+            helpers.log('Loading stopwords.')
             stopwords = set()
             for elem in tree.find('stopper').iter('word'):
                 stopwords.add(elem.text)
             self.stopwords = frozenset(stopwords)
         elif INDRI_PARAMETERS.split('/')[-1] == 'index.xml':
-            logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Not loading stopwords.]')
+            helpers.log('Not loading stopwords.')
+            self.stopwords = None
         else:
             raise NotImplementedError(f'Unknown index setting: {INDRI_PARAMETERS.split("/")[-1]}')
         self.punctuation = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
         stop = datetime.now()
-        logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\t[Loaded index in {stop - start}.]')
+        helpers.log(f'Loaded index in {stop - start}.')
 
-    def bigram_lookup(self, first: str, second: str) -> List[Tuple[int, float]]:
-        """Retrieve documents according to bigram full text search."""
-        return self.index.query(f'#1({self.normalize(first)} {self.normalize(second)})',
-                                results_requested=65500)
-
-    def unigram_lookup(self, first: str) -> List[Tuple[int, float]]:
+    def unigram_query(self, text: str, request: int = 5000) -> List[Tuple[int, float]]:
         """Retrieve documents according to unigram text search."""
-        return self.index.query(f'{self.normalize(first)}', results_requested=65500)
+        return list(self.env.query(f'{self.normalize(text)}', results_requested=request))
 
-    def title_lookup(self, title) -> List[Tuple[int, float]]:
+    def bigram_query(self, first: str, second: str,  request: int = 5000) -> List[Tuple[int, float]]:
+        """Retrieve documents according to bigram full text search."""
+        return list(self.env.query(f'#1({self.normalize(first)} {self.normalize(second)})', results_requested=request))
+
+    def title_lookup(self, title: str) -> List[Tuple[int, float]]:
         """Retrieve documents according to unigram title only search."""
-        return self.index.query(f'{title}.title')
+        return list(self.env.query(f'{title}.title'))
 
-    def documents(self) -> Tuple[str, Tuple[int]]:
+    def document_int_ids(self) -> Tuple[str, Tuple[int]]:
         """Generator over the documents in the index."""
         for idx in range(self.index.document_base(), self.index.maximum_document()):
-            yield self.index.document_base(idx)
+            yield idx
+        return
+
+    def get_wid(self, int_id) -> int:
+        return int(self.index.ext_document_id(int_id))
+
+    def count(self) -> int:
+        return self.index.document_count()
 
     def internal2external(self, internal: int) -> int:
-        return int(self.index.document(internal)[0])
+        """Find an external id given and internal one."""
+        return self.int2wid[internal]
 
     def external2internal(self, external: int) -> int:
-        return self.index.document_ids([str(external)])[0][1]
+        """Find an external id given and internal one."""
+        return self.wid2int[external]
 
     def tokenize(self, s: str) -> List[str]:
+        """Tokenize the string in a list of normalized, lower-cased words."""
         normalized = self.normalize(s)
-        if INDRI_PARAMETERS.split('/')[-1] == 'indri_stop_stem.xml':
-            tokenized = [token.lower() for token in nltk.word_tokenize(normalized) if
-                         token.lower() not in self.stopwords]
+        if self.stopwords is not None:
+            tokenized = [token for token in nltk.word_tokenize(normalized) if token not in self.stopwords]
         else:
-            tokenized = [token.lower() for token in nltk.word_tokenize(normalized)]
+            tokenized = [token for token in nltk.word_tokenize(normalized)]
 
         return tokenized
 
     def normalize(self, s: str) -> str:
+        """Translate non-ascii characters to ascii and remove any punctuation."""
         s = unidecode(s)
         s = s.translate(self.punctuation)
+        s = s.lower()
 
         return s
 
     def inspect_document(self, doc: Tuple[str, Tuple[int]], include_stop: bool, format_paragraph: bool) -> str:
         """Reproduce the stemmed document stored by indri as a string.
 
-        :param doc: Whe document as retrieved from index.document(id)
+        :param doc: The document as retrieved from index.document(id)
         :param include_stop: Whether to include stop words.
         :param format_paragraph: Whether to format according to original paragraph delimitation.
         """

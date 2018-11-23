@@ -1,17 +1,15 @@
-import collections as cl
 import json
 import logging
 import os
 from datetime import datetime
 
-import nltk
 import pyndri
 import pytrec_eval
 
 from dataset.dataset import Dataset
 import main_constants as c
 from retrieval.evaluate import Run, Evaluator
-from retrieval.index import Index
+from services.index import Index
 from services import parallel
 
 INDEX: Index
