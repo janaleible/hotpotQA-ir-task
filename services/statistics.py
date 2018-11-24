@@ -1,6 +1,6 @@
 from dataset.dataset import Dataset, Question
 from typing import Set, List, Tuple
-from retrieval.index import Index
+from services.index import Index
 from datetime import datetime
 from main_constants import *
 from tqdm import tqdm
@@ -8,6 +8,8 @@ import numpy as np
 import logging
 import sqlite3
 import pickle
+
+from services import sql
 
 logging.basicConfig(level='INFO')
 INDEX: Index
@@ -18,10 +20,10 @@ MEDIUM = 1
 EASY = 2
 
 
-def accuracies(dataset: str, database: str):
+def accuracies(database: str, table: str):
     """Compute accuracy over a dataset given a retrieval database.
     Statistics are split over question types and levels."""
-    dataset = Dataset.from_file(dataset)
+    dataset = Dataset.from_file(TRAINING_SET)
     global INDEX
     INDEX = Index()
 
@@ -30,7 +32,7 @@ def accuracies(dataset: str, database: str):
     with sqlite3.connect(database) as conn:
         for question in tqdm(dataset, unit='questions'):
             target = _extract_target(question)
-            prediction = _fetch_prediction(conn, question)
+            prediction = _fetch_prediction(table, conn, question)
             if prediction is None:
                 continue
 
@@ -50,6 +52,16 @@ def accuracies(dataset: str, database: str):
     logging.info(f'[{datetime.now()}]\t[Comparison Question Full Accuracy: {round(full_comparison, 4)}]')
     logging.info(f'[{datetime.now()}]\t[Bridge Question Full Accuracy: {round(full_bridge, 4)}]')
 
+    return {
+        'full': full,
+        'half': half,
+        'full_hard': full_hard,
+        'full_medium': full_medium,
+        'full_easy': full_easy,
+        'full_comparison': full_comparison,
+        'full_bridge': full_bridge
+    }
+
 
 def _extract_target(question: Question) -> Set[int]:
     """Extract indri internal ids of target documents."""
@@ -61,9 +73,9 @@ def _extract_target(question: Question) -> Set[int]:
     return target
 
 
-def _fetch_prediction(conn: sqlite3.Connection, question: Question) -> List[int]:
+def _fetch_prediction(table: str, conn: sqlite3.Connection, question: Question) -> List[int]:
     cursor = conn.cursor()
-    cursor.execute(SQL.FETCH_ONE_RESULT, (question.id,))
+    cursor.execute(sql.get_retrieval(table), (question.id,))
     prediction = cursor.fetchone()
     cursor.close()
 

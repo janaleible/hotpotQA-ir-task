@@ -1,6 +1,6 @@
-unidecode
 appnope==0.1.0
 backcall==0.1.0
+bcolz==1.2.1
 bleach==3.0.2
 decorator==4.3.0
 defusedxml==0.5.0
@@ -35,8 +35,8 @@ prompt-toolkit==2.0.7
 ptyprocess==0.6.0
 Pygments==2.2.0
 pyndri==0.4
-pytrec_eval==0.3
 python-dateutil==2.7.5
+pytrec-eval==0.3
 pyzmq==17.1.2
 qtconsole==4.4.3
 Send2Trash==1.5.0
@@ -46,6 +46,7 @@ testpath==0.4.2
 tornado==5.1.1
 tqdm==4.28.1
 traitlets==4.3.2
+Unidecode==1.0.23
 wcwidth==0.1.7
 webencodings==0.5.1
 widgetsnbextension==3.4.2
