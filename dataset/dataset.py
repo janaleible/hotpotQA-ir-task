@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Set
 from main_constants import *
 import json
 
@@ -13,9 +13,24 @@ class Question(object):
         self.level = level
         self.type = _type
 
-        self.gold_articles: List[str] = [fact[0] for fact in supporting_facts]
+        self.gold_articles: Set[str] = set(fact[0] for fact in supporting_facts)
         self.context: Dict[str, List[str]] = {article[0]: article[1] for article in context}
 
+    def to_json(self) -> Dict:
+        return json.dumps({
+            'id': self.id,
+            'level': self.level,
+            'type': self.type,
+            'question': self.question,
+            'answer': self.answer,
+            'supporting_facts': self.gold_articles
+        })
+
+    def __repr__(self):
+        return self.to_json()
+
+    def __str__(self):
+        return self.to_json()
 
 class Dataset(object):
 
