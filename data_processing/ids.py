@@ -23,7 +23,7 @@ def build():
     with open(INT2WID, 'wb') as file:
         pickle.dump(int2wid, file)
     with open(WID2INT, 'wb') as file:
-        pickle.dump(int2wid, file)
+        pickle.dump(wid2int, file)
 
     helpers.log(f'Finished building maps. Mapped {len(int2wid)}/{INDEX.index.document_count()}')
 
