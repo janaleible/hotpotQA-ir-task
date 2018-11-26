@@ -65,3 +65,8 @@ EMBEDDINGS_200 = os.path.join('data', 'embeddings', 'glove.6B.200d')
 EMBEDDINGS_300 = os.path.join('data', 'embeddings', 'glove.6B.300d')
 EMBEDDINGS = os.path.join('data', 'embeddings', 'glove.42B.300d')
 EMBEDDINGS_TXT = os.path.join('data', 'embeddings', 'glove.42B.300d.txt')
+
+L2R_DIR = os.path.join('data', 'l2r')
+L2R_TRAINING_SET = os.path.join(L2R_DIR, 'training_set.tar')
+L2R_TEST_SET = os.path.join(L2R_DIR, 'test_set.tar')
+L2R_MODEL = os.path.join(L2R_DIR, 'model.tar')
