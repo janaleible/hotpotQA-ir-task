@@ -1,5 +1,8 @@
+import os
 import string
-
+import pyndri
+import pickle
+import nltk
 from unidecode import unidecode
 
 from main_constants import TITLE2WID, WID2TITLE, INDRI_INDEX_DIR, EOP, EOS, INDRI_PARAMETERS, WID2INT, INT2WID
@@ -7,9 +10,44 @@ from typing import Dict, List, Tuple, Union, Set
 from xml.etree import ElementTree
 from datetime import datetime
 from services import helpers
-import pyndri
-import pickle
-import nltk
+
+
+class Tokenizer:
+
+    stopwords: Union[Set, None]
+
+    def __init__(self) -> None:
+
+        tree = ElementTree.parse(INDRI_PARAMETERS)
+        if INDRI_PARAMETERS.split('/')[-1] == 'indri_stop_stem.xml':
+            helpers.log('Loading stopwords.')
+            stopwords = set()
+            for elem in tree.find('stopper').iter('word'):
+                stopwords.add(elem.text)
+            self.stopwords = frozenset(stopwords)
+        elif INDRI_PARAMETERS.split('/')[-1] == 'index.xml':
+            helpers.log('Not loading stopwords.')
+            self.stopwords = None
+        else:
+            raise NotImplementedError(f'Unknown index setting: {INDRI_PARAMETERS.split("/")[-1]}')
+        self._punctuation = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
+
+    def normalize(self, s: str) -> str:
+        """Translate non-ascii characters to ascii and remove any punctuation."""
+        s = unidecode(s)
+        s = s.translate(self._punctuation)
+        s = s.lower()
+
+        return s
+
+    def tokenize(self, s: str, keep_stopwords=True) -> List[str]:
+        normalized = self.normalize(s)
+        if not keep_stopwords and self.stopwords is not None:
+            tokenized = [token for token in nltk.word_tokenize(normalized) if token not in self.stopwords]
+        else:
+            tokenized = [token for token in nltk.word_tokenize(normalized)]
+
+        return tokenized
 
 
 class Index(object):
@@ -32,7 +70,7 @@ class Index(object):
     int2wid: Dict[int, int]
     wid2int: Dict[int, int]
 
-    stopwords: Union[Set, None]
+    tokenizer: Tokenizer
 
     def __enter__(self, **kwargs):
         idx = self.__init__()
@@ -50,14 +88,24 @@ class Index(object):
         self.index = pyndri.Index(f'{INDRI_INDEX_DIR}')
         self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
         self.id2tf = self.index.get_term_frequencies()
-        with open(TITLE2WID, 'rb') as file:
-            self.title2wid = pickle.load(file)
-        with open(WID2TITLE, 'rb') as file:
-            self.wid2title = pickle.load(file)
-        with open(WID2INT, 'rb') as file:
-            self.wid2int = pickle.load(file)
-        with open(INT2WID, 'rb') as file:
-            self.int2wid = pickle.load(file)
+
+        self.tokenizer = Tokenizer()
+
+        if os.path.isfile(TITLE2WID):
+            with open(TITLE2WID, 'rb') as file:
+                self.title2wid = pickle.load(file)
+
+        if os.path.isfile(WID2TITLE):
+            with open(WID2TITLE, 'rb') as file:
+                self.wid2title = pickle.load(file)
+
+        if os.path.isfile(WID2INT):
+            with open(WID2INT, 'rb') as file:
+                self.wid2int = pickle.load(file)
+
+        if os.path.isfile(INT2WID):
+            with open(INT2WID, 'rb') as file:
+                self.int2wid = pickle.load(file)
 
         if env == 'default':
             self.env = pyndri.QueryEnvironment(self.index)
@@ -68,20 +116,6 @@ class Index(object):
             self.env = pyndri.PRFQueryEnvironment(env, fb_docs=10, fb_terms=10)
         else:
             raise ValueError(f'Unknown environment configuration {env}')
-
-        tree = ElementTree.parse(INDRI_PARAMETERS)
-        if INDRI_PARAMETERS.split('/')[-1] == 'indri_stop_stem.xml':
-            helpers.log('Loading stopwords.')
-            stopwords = set()
-            for elem in tree.find('stopper').iter('word'):
-                stopwords.add(elem.text)
-            self.stopwords = frozenset(stopwords)
-        elif INDRI_PARAMETERS.split('/')[-1] == 'index.xml':
-            helpers.log('Not loading stopwords.')
-            self.stopwords = None
-        else:
-            raise NotImplementedError(f'Unknown index setting: {INDRI_PARAMETERS.split("/")[-1]}')
-        self.punctuation = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
         stop = datetime.now()
         helpers.log(f'Loaded index in {stop - start}.')
@@ -118,23 +152,13 @@ class Index(object):
         """Find an external id given and internal one."""
         return self.wid2int[external]
 
-    def tokenize(self, s: str) -> List[str]:
+    def tokenize(self, s: str, keep_stopwords=True) -> List[str]:
         """Tokenize the string in a list of normalized, lower-cased words."""
-        normalized = self.normalize(s)
-        if self.stopwords is not None:
-            tokenized = [token for token in nltk.word_tokenize(normalized) if token not in self.stopwords]
-        else:
-            tokenized = [token for token in nltk.word_tokenize(normalized)]
-
-        return tokenized
+        return self.tokenizer.tokenize(s, keep_stopwords)
 
     def normalize(self, s: str) -> str:
         """Translate non-ascii characters to ascii and remove any punctuation."""
-        s = unidecode(s)
-        s = s.translate(self.punctuation)
-        s = s.lower()
-
-        return s
+        return self.tokenizer.normalize(s)
 
     def inspect_document(self, doc: Tuple[str, Tuple[int]], include_stop: bool, format_paragraph: bool) -> str:
         """Reproduce the stemmed document stored by indri as a string.
@@ -150,6 +174,16 @@ class Index(object):
         else:
             doc_str = " ".join([self.id2token.get(tid, -1) for tid in doc_tokens if self.id2token.get(tid, -1) != -1])
         if format_paragraph:
-            doc_str = doc_str.replace(EOP, '\n\n').replace(EOS, '')
+            doc_str = doc_str.replace(EOP, '\n\n').replace(EOS, '. ')
 
         return doc_str
+
+    def get_document_by_title(self, title: str) -> str:
+
+        external_id = self.title2wid[title]
+        internal_id = self.external2internal(external_id)
+        document = self.index.document(internal_id)
+
+        pretty_document = self.inspect_document(document, include_stop=True, format_paragraph=False)
+
+        return pretty_document
