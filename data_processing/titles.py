@@ -1,7 +1,7 @@
 from main_constants import RAW_DATA_DIR, INDEX_DIR, WID2TITLE, TITLE2WID
 from datetime import datetime
 from services import parallel, helpers
-from typing import Dict, List
+from typing import Dict
 from glob import glob
 import logging
 import pickle

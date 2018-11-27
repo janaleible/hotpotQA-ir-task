@@ -1,6 +1,5 @@
 from tqdm import tqdm
 
-from services import helpers
 from services.index import Index
 from main_constants import *
 import numpy as np
@@ -9,12 +8,27 @@ import bcolz
 INDEX: Index
 
 
-def build():
+def build(emb: str):
+    if emb == 'E6B.50':
+        embeddings = EMBEDDINGS_50
+        embeddings_txt = EMBEDDINGS_50_TXT
+    elif emb == 'E6B.100':
+        embeddings = EMBEDDINGS_100
+        embeddings_txt = EMBEDDINGS_100_TXT
+    elif emb == 'E6B.200':
+        embeddings = EMBEDDINGS_200
+        embeddings_txt = EMBEDDINGS_200_TXT
+    elif emb == 'E6B.300':
+        embeddings = EMBEDDINGS_300
+        embeddings_txt = EMBEDDINGS_300_TXT
+    else:
+        raise ValueError(f'Unknown embedding specification {emb}')
+
     global INDEX
     INDEX = Index(env='default')
-    embeddings = bcolz.carray(np.zeros((len(INDEX.token2id), 300)), rootdir=EMBEDDINGS, mode='w')
+    embeddings = bcolz.carray(np.zeros((len(INDEX.token2id), 300)), rootdir=embeddings, mode='w')
     count = 0
-    with open(EMBEDDINGS_TXT, 'rb') as f:
+    with open(embeddings_txt, 'rb') as f:
         for l in tqdm(f.readlines()):
             line = l.decode().split()
             word = INDEX.normalize(line[0])
