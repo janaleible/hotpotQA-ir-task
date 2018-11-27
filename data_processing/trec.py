@@ -132,12 +132,12 @@ def _extract_doc(doc: Dict[str, Any]):
     paragraph_index = 1
     while char_count < 500 and paragraph_index < len(doc['text']):
         plain_text = [__remove_links(sentence) for sentence in doc['text'][paragraph_index]]
-        plain_text = unidecode(plain_text)
         paragraphs.append(plain_text)
         char_count += sum(len(sentence) for sentence in plain_text)
         paragraph_index += 1
 
     doc_string = f"{EOP}".join([f"{EOS}".join(sentences) for sentences in paragraphs])
+    doc_string = unidecode(doc_string)
 
     return int(doc['id']), doc['title'], doc_string
 
