@@ -26,7 +26,8 @@ def build(emb: str):
 
     global INDEX
     INDEX = Index(env='default')
-    embeddings = bcolz.carray(np.zeros((len(INDEX.token2id), 300)), rootdir=embeddings, mode='w')
+    dim = int(emb.split('.')[-1])
+    embeddings = bcolz.carray(np.zeros((len(INDEX.token2id), dim)), rootdir=embeddings, mode='w')
     count = 0
     with open(embeddings_txt, 'rb') as f:
         for l in tqdm(f.readlines()):
