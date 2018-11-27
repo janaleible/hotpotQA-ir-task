@@ -98,14 +98,16 @@ class Index(object):
         if os.path.isfile(WID2TITLE):
             with open(WID2TITLE, 'rb') as file:
                 self.wid2title = pickle.load(file)
+        try:
+            if os.path.isfile(WID2INT):
+                with open(WID2INT, 'rb') as file:
+                    self.wid2int = pickle.load(file)
 
-        if os.path.isfile(WID2INT):
-            with open(WID2INT, 'rb') as file:
-                self.wid2int = pickle.load(file)
-
-        if os.path.isfile(INT2WID):
-            with open(INT2WID, 'rb') as file:
-                self.int2wid = pickle.load(file)
+            if os.path.isfile(INT2WID):
+                with open(INT2WID, 'rb') as file:
+                    self.int2wid = pickle.load(file)
+        except FileNotFoundError:
+            helpers.log('ID mappings do not exist yet. Not loaded.')
 
         if env == 'default':
             self.env = pyndri.QueryEnvironment(self.index)
