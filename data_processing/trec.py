@@ -1,4 +1,5 @@
 """This module builds the TREC corpus that will be passed to the Indri index. Read on for important details."""
+from unidecode import unidecode
 
 from main_constants import EOP, EOS, RAW_DATA_DIR, TREC_CORPUS_DIR
 from typing import Dict, Any, Tuple, List
@@ -131,6 +132,7 @@ def _extract_doc(doc: Dict[str, Any]):
     paragraph_index = 1
     while char_count < 500 and paragraph_index < len(doc['text']):
         plain_text = [__remove_links(sentence) for sentence in doc['text'][paragraph_index]]
+        plain_text = unidecode(plain_text)
         paragraphs.append(plain_text)
         char_count += sum(len(sentence) for sentence in plain_text)
         paragraph_index += 1
