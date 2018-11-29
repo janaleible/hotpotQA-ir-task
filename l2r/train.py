@@ -1,7 +1,10 @@
 import copy
+import csv
 import gc as garbage_collector
+import os
 import pickle
 from typing import Dict
+import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -23,6 +26,8 @@ class Pointwise(nn.Module):
 
         self.tokenizer = Tokenizer()
         self.token2id = token2id
+
+        self.epochs_trained = 0
 
         self.document_embedding = nn.Embedding(
             len(self.token2id),
@@ -74,15 +79,21 @@ def get_token2id() -> Dict[str, int]:
 
     index = Index()
     token2id = copy.deepcopy(index.token2id)
-    index = None
+    index = None # make sure to lose reference to the index for memory reasons
     garbage_collector.collect()
 
     return token2id
 
 
-def train() -> Pointwise:
+def update_learning_progress(learning_progress: {}, epoch: int, loss: float, training_acc: float, test_acc: float):
+    learning_progress['epoch'].append(epoch)
+    learning_progress['loss'].append(loss)
+    learning_progress['test_acc'].append(test_acc)
+    learning_progress['training_acc'].append(training_acc)
 
-    model = Pointwise(get_token2id())
+
+def train(model: Pointwise, number_of_epochs: int =15) -> Pointwise:
+
     criterion = nn.BCELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
@@ -93,9 +104,19 @@ def train() -> Pointwise:
 
     print('loaded dataset', flush=True)
 
-    for epoch in range(1):
+    if os.path.isfile(c.L2R_TMP_TRAIN_PROGRESS):
+        with open(c.L2R_TMP_TRAIN_PROGRESS) as f:
+            reader = csv.reader(f)
+            stats = list(sorted(reader, key=lambda row: row[0])) # sort entries in csv by epoch, TODO: parse numbers
 
-        running_loss = 0
+        # load learning progress if stats match current model, else remove
+        if not stats[0][0] == model.epochs_trained:
+            os.remove(c.L2R_TMP_TRAIN_PROGRESS)
+
+    for epoch in range(number_of_epochs):
+
+        epoch_loss = 0
+        correct_predictions = 0
 
         for (query, document, target) in tqdm(training_set):
 
@@ -103,12 +124,25 @@ def train() -> Pointwise:
 
             score = model(query, document)
             loss = criterion(score, torch.FloatTensor([target]))
+            correct_predictions += (abs(score.item() - target) < 0.5)
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item()
+            epoch_loss += loss.item()
 
-        print(f'Epoch {epoch}: loss = {running_loss}', flush=True)
+        training_acc = correct_predictions / len(training_set)
+
+        test_model = Pointwise(model.token2id)
+        test_model.load_state_dict(model.state_dict())
+        test_acc = evaluate(test_model)
+
+        with open(c.L2R_TMP_TRAIN_PROGRESS, 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow([epoch, epoch_loss / len(training_set), training_acc, test_acc])
+
+        model.epochs_trained += 1
+        torch.save(model, c.L2R_INTERMEDIATE_MODEL.format(model.epochs_trained))
+        print(f'Epoch {model.epochs_trained}: loss = {epoch_loss}', flush=True)
 
     return model
 
@@ -131,12 +165,36 @@ def evaluate(model: Pointwise) -> float:
     return right / (right + wrong)
 
 
-def train_and_save():
+def train_and_save(number_of_epochs: int=15):
 
-    model = train()
+    model = Pointwise(get_token2id()) # TODO: optionally load model and resume training
+
+    model = train(model, number_of_epochs)
 
     with open(c.L2R_MODEL, 'wb') as f:
         pickle.dump(model, f)
+
+    epochs = []
+    loss = []
+    training_acc = []
+    test_acc = []
+
+    with open(c.L2R_TMP_TRAIN_PROGRESS, 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            epochs.append(int(row[0]))
+            loss.append(float(row[1]))
+            training_acc.append(float(row[2]))
+            test_acc.append(float(row[3]))
+
+    plt.plot(epochs, loss, color='tab:orange', label='average loss')
+    plt.plot(epochs, training_acc, color='tab:blue', label='training set accuracy')
+    plt.plot(epochs, test_acc, color='tab:green', label='test set accuracy')
+    plt.xlabel('Epochs')
+    plt.xticks(range(1,len(epochs)))
+    plt.legend(loc='upper left')
+
+    plt.savefig(c.L2R_LEARNING_PROGRESS_PLOT)
 
 
 def load_and_evaluate():
