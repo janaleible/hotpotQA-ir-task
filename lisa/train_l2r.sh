@@ -18,14 +18,18 @@ export LD_LIBRARY_PATH=$CUDA_HOME/lib64:/hpc/eb/Debian9/cuDNN/7.1-CUDA-8.0.4
 4-GCCcore-5.4.0/lib64:$LD_LIBRARY_PATH
 
 #Preparing input data (e.g. copying input data from your home folder to scratch, preprocessing)
+mkdir -p "$TMPDIR"/data
+mkdir -p "$TMPDIR"/data/l2r
 cp -r $HOME/hotpotQA-ir-task/data/l2r "$TMPDIR"/data/l2r
 
 #Running your application
 cd $HOME/hotpotQA-ir-task
-srun python3 main_l2r.py -a train -e 15 # check python dir
+source venv/bin/activate
+pip install -r requirements.txt
+srun python3 main_l2r.py -a train -e 15 &> $HOME/log.log
 
 
 #Aggergating output data (e.g. post-processing, copying data from scratch to your home)
-mkdir $HOME/hotpotQA-ir-task/models
+mkdir -p $HOME/hotpotQA-ir-task/models
 cp -r $TMPDIR/models $HOME/hotpotQA-ir-taks/models
 
