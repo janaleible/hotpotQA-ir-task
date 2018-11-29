@@ -94,7 +94,10 @@ def update_learning_progress(learning_progress: {}, epoch: int, loss: float, tra
 
 def train(model: Pointwise, number_of_epochs: int =15) -> Pointwise:
 
-    criterion = nn.BCELoss()
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    model.to(device)
+    criterion = nn.BCELoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
     print('created model, optimizer, loss', flush=True)
@@ -123,7 +126,7 @@ def train(model: Pointwise, number_of_epochs: int =15) -> Pointwise:
             optimizer.zero_grad()
 
             score = model(query, document)
-            loss = criterion(score, torch.FloatTensor([target]))
+            loss = criterion(score, torch.FloatTensor([target]).to(device))
             correct_predictions += (abs(score.item() - target) < 0.5)
             loss.backward()
             optimizer.step()
