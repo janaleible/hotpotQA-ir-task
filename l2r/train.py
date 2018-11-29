@@ -139,6 +139,7 @@ def train(model: Pointwise, number_of_epochs: int =15) -> Pointwise:
         test_model.load_state_dict(model.state_dict())
         test_acc = evaluate(test_model)
 
+        os.makedirs(c.L2R_MODEL_DIR, exist_ok=True)
         with open(c.L2R_TMP_TRAIN_PROGRESS, 'a') as f:
             writer = csv.writer(f)
             writer.writerow([epoch, epoch_loss / len(training_set), training_acc, test_acc])
@@ -174,6 +175,7 @@ def train_and_save(number_of_epochs: int=15):
 
     model = train(model, number_of_epochs)
 
+    os.makedirs(c.L2R_MODEL_DIR, exist_ok=True)
     with open(c.L2R_MODEL, 'wb') as f:
         pickle.dump(model, f)
 

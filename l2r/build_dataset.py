@@ -57,7 +57,7 @@ def build_l2r_dataset():
 
     testset_cutoff = int(0.1 * len(examples))
 
-    os.makedirs(c.L2R_DIR, exist_ok=True)
+    os.makedirs(c.L2R_DATA_DIR, exist_ok=True)
     with open(c.L2R_TRAINING_SET, 'wb') as file:
         pickle.dump(examples[testset_cutoff:], file)
 
