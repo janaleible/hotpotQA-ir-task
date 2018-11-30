@@ -76,7 +76,7 @@ class Pointwise(nn.Module):
 
         tokenized = [self.token2id.get(token, 0) for token in self.tokenizer.tokenize(s)]
 
-        return torch.LongTensor(tokenized).to(self.device)
+        return CPUorGPULongTensor(tokenized).to(self.device)
 
 
 def get_token2id() -> Dict[str, int]:
@@ -98,8 +98,12 @@ def update_learning_progress(learning_progress: {}, epoch: int, loss: float, tra
 
 def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
 
-    model.to(device)
-    criterion = nn.BCELoss().to(device)
+    if torch.cuda.is_available():
+        model.cuda()
+        criterion = nn.BCELoss().to(device)
+    else:
+        criterion = nn.BCELoss()
+
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
     print('created model, optimizer, loss', flush=True)
@@ -115,7 +119,7 @@ def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
             stats = list(sorted(reader, key=lambda row: row[0])) # sort entries in csv by epoch, TODO: parse numbers
 
         # load learning progress if stats match current model, else remove
-        if not stats[0][0] == model.epochs_trained:
+        if not int(stats[0][0]) == model.epochs_trained:
             os.remove(c.L2R_TMP_TRAIN_PROGRESS)
 
     for epoch in range(number_of_epochs):
@@ -128,7 +132,7 @@ def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
             optimizer.zero_grad()
 
             score = model(query, document)
-            loss = criterion(score, torch.FloatTensor([target]).to(device))
+            loss = criterion(score, CPUorGPUFloatTensor([target]).to(device))
             correct_predictions += (abs(score.item() - target) < 0.5)
             loss.backward()
             optimizer.step()
@@ -137,7 +141,7 @@ def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
 
         training_acc = correct_predictions / len(training_set)
 
-        test_model = Pointwise(model.token2id)
+        test_model = Pointwise(None, model.token2id)
         test_model.load_state_dict(model.state_dict())
         test_acc = evaluate(test_model)
 
@@ -211,3 +215,18 @@ def load_and_evaluate():
         model = pickle.load(f)
 
     print(f'Accuracy: {round(evaluate(model), 4)}')
+
+
+def CPUorGPULongTensor(source):
+
+    if torch.cuda.is_available():
+        return torch.LongTensor(source).cuda()
+    else:
+        return torch.LongTensor(source)
+
+
+def CPUorGPUFloatTensor(source):
+    if torch.cuda.is_available():
+        return torch.FloatTensor(source).cuda()
+    else:
+        return torch.FloatTensor(source)
