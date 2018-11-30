@@ -132,7 +132,7 @@ def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
             optimizer.zero_grad()
 
             score = model(query, document)
-            loss = criterion(score, CPUorGPUFloatTensor([target]).to(device))
+            loss = criterion(score, CPUorGPUFloatTensor([target]))
             correct_predictions += (abs(score.item() - target) < 0.5)
             loss.backward()
             optimizer.step()
@@ -143,6 +143,7 @@ def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
 
         test_model = Pointwise(None, model.token2id)
         test_model.load_state_dict(model.state_dict())
+        if torch.cuda.is_available(): model.cuda()
         test_acc = evaluate(test_model)
 
         os.makedirs(c.L2R_MODEL_DIR, exist_ok=True)
@@ -214,7 +215,7 @@ def load_and_evaluate():
     with open(c.L2R_MODEL, 'rb') as f:
         model = pickle.load(f)
 
-    print(f'Accuracy: {round(evaluate(model), 4)}')
+    # print(f'Accuracy: {round(evaluate(model), 4)}')
 
 
 def CPUorGPULongTensor(source):
