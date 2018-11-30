@@ -5,7 +5,7 @@ import os
 import pickle
 from typing import Dict
 import matplotlib.pyplot as plt
-
+import nltk
 import torch
 import torch.nn as nn
 from tqdm import tqdm
@@ -15,17 +15,21 @@ from services.index import Index, Tokenizer
 EMBEDDING_DIMENSION = 15
 ENCODER_HIDDEN_SIZE = 15
 
+nltk.download('punkt')
+nltk.download('stopwords')
 
 class Pointwise(nn.Module):
 
     tokenizer: Tokenizer
     token2id: Dict[str, int]
 
-    def __init__(self, token2id):
+    def __init__(self, device, token2id):
         super().__init__()
 
         self.tokenizer = Tokenizer()
         self.token2id = token2id
+
+        self.device = device
 
         self.epochs_trained = 0
 
@@ -72,7 +76,7 @@ class Pointwise(nn.Module):
 
         tokenized = [self.token2id.get(token, 0) for token in self.tokenizer.tokenize(s)]
 
-        return torch.LongTensor(tokenized)
+        return torch.LongTensor(tokenized).to(self.device)
 
 
 def get_token2id() -> Dict[str, int]:
@@ -92,9 +96,7 @@ def update_learning_progress(learning_progress: {}, epoch: int, loss: float, tra
     learning_progress['training_acc'].append(training_acc)
 
 
-def train(model: Pointwise, number_of_epochs: int =15) -> Pointwise:
-
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
 
     model.to(device)
     criterion = nn.BCELoss().to(device)
@@ -171,7 +173,8 @@ def evaluate(model: Pointwise) -> float:
 
 def train_and_save(number_of_epochs: int=15):
 
-    model = Pointwise(get_token2id()) # TODO: optionally load model and resume training
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    model = Pointwise(device, get_token2id()) # TODO: optionally load model and resume training
 
     model = train(model, number_of_epochs)
 
