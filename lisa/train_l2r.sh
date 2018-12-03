@@ -1,11 +1,11 @@
 #!/bin/bash
 
 #Specification of the job requirements for the batch system (number of nodes, expected runtime, etc)
-#SBATCH --job-name=example
+#SBATCH --job-name=l2r
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=3
 #SBATCH --ntasks-per-node=1
-#SBATCH --time=1:00:00
+#SBATCH --time=24:00:00
 #SBATCH --mem=60000M
 #SBATCH --partition=gpu_shared
 #SBATCH --gres=gpu:1

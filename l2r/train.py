@@ -143,7 +143,7 @@ def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
 
         test_model = Pointwise(None, model.token2id)
         test_model.load_state_dict(model.state_dict())
-        if torch.cuda.is_available(): model.cuda()
+        if torch.cuda.is_available(): test_model.cuda()
         test_acc = evaluate(test_model)
 
         os.makedirs(c.L2R_MODEL_DIR, exist_ok=True)
