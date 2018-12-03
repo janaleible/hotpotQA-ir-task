@@ -3,6 +3,8 @@ import csv
 import gc as garbage_collector
 import os
 import pickle
+from abc import abstractmethod
+from math import ceil
 from typing import Dict
 import matplotlib.pyplot as plt
 import nltk
@@ -18,27 +20,42 @@ ENCODER_HIDDEN_SIZE = 15
 nltk.download('punkt')
 nltk.download('stopwords')
 
-class Pointwise(nn.Module):
+
+class Encoder(nn.Module):
 
     tokenizer: Tokenizer
     token2id: Dict[str, int]
 
-    def __init__(self, device, token2id):
+    def __init__(self, token2id):
         super().__init__()
 
         self.tokenizer = Tokenizer()
         self.token2id = token2id
 
-        self.device = device
+    @abstractmethod
+    def forward(self, input):
+        raise NotImplementedError
 
-        self.epochs_trained = 0
+    def prepare_input(self, documents: [str]) -> torch.LongTensor:
+
+        tokenized_documents = [[self.token2id.get(token, 0) for token in self.tokenizer.tokenize(document)] for document in documents]
+        max_document_length = max(len(doc) for doc in tokenized_documents)
+
+        tensors = []
+        for document in tokenized_documents:
+            if len(document) < max_document_length:
+                document += [0] * (max_document_length - len(document))
+            tensors.append(torch.LongTensor(document))
+
+        return dont_care_cuda(torch.stack(tensors).permute(1, 0))
+
+
+class GRUEncoder(Encoder):
+
+    def __init__(self, token2id):
+        super().__init__(token2id)
 
         self.document_embedding = nn.Embedding(
-            len(self.token2id),
-            EMBEDDING_DIMENSION
-        )
-
-        self.query_embedding = nn.Embedding(
             len(self.token2id),
             EMBEDDING_DIMENSION
         )
@@ -48,35 +65,60 @@ class Pointwise(nn.Module):
             hidden_size=ENCODER_HIDDEN_SIZE
         )
 
-        self.query_encoder = nn.GRU(
-            input_size=EMBEDDING_DIMENSION,
-            hidden_size=ENCODER_HIDDEN_SIZE
-        )
+    def forward(self, documents):
 
-        self.similarity = nn.CosineSimilarity(
+        document_tensors = self.prepare_input(documents)
+        document_embeddings = self.document_embedding(document_tensors)
+        (document_encoding, document_hn) = self.document_encoder(document_embeddings)
+
+        return document_hn
+
+
+class Scorer(nn.Module):
+
+    @abstractmethod
+    def forward(self, document_encodings, query_encodings):
+        raise NotImplementedError
+
+
+class CosineScorer(Scorer):
+
+    def __init__(self):
+        super().__init__()
+
+        self.similarity_measure = nn.CosineSimilarity(
             dim=2
         )
 
-    def forward(self, query: str, document: str):
+    def forward(self, document_encodings, query_encodings):
+        return self.similarity_measure(document_encodings, query_encodings)
 
-        query_tensor = self.prepare_input(query)
-        document_tensor = self.prepare_input(document)
 
-        query_embedding = torch.unsqueeze(self.query_embedding(query_tensor), dim=1)
-        document_embedding = torch.unsqueeze(self.document_embedding(document_tensor), dim=1)
+class Pointwise(nn.Module):
 
-        (document_encoding, document_hn) = self.document_encoder(document_embedding)
-        (query_encoding, query_hn) = self.query_encoder(query_embedding)
+    epochs_trained: int
 
-        score = self.similarity(document_hn, query_hn)
+    def __init__(self,
+        query_encoder: Encoder,
+        document_encoder: Encoder,
+        scorer: Scorer
+    ):
+        super().__init__()
 
-        return torch.abs(score).reshape((1,))
+        self.epochs_trained = 0
 
-    def prepare_input(self, s: str) -> torch.LongTensor:
+        self.query_encoder = query_encoder
+        self.document_encoder = document_encoder
+        self.scorer = scorer
 
-        tokenized = [self.token2id.get(token, 0) for token in self.tokenizer.tokenize(s)]
+    def forward(self, query: [str], document: [str]):
 
-        return CPUorGPULongTensor(tokenized).to(self.device)
+        query_hns = self.query_encoder(query)
+        document_hns = self.document_encoder(document)
+
+        score = self.scorer(document_hns, query_hns)
+
+        return torch.abs(score)
 
 
 def get_token2id() -> Dict[str, int]:
@@ -96,13 +138,10 @@ def update_learning_progress(learning_progress: {}, epoch: int, loss: float, tra
     learning_progress['training_acc'].append(training_acc)
 
 
-def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
+def train(model: Pointwise, number_of_epochs: int =15) -> Pointwise:
 
-    if torch.cuda.is_available():
-        model.cuda()
-        criterion = nn.BCELoss().to(device)
-    else:
-        criterion = nn.BCELoss()
+    dont_care_cuda(model)
+    criterion = dont_care_cuda(nn.BCELoss())
 
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
@@ -127,13 +166,28 @@ def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
         epoch_loss = 0
         correct_predictions = 0
 
-        for (query, document, target) in tqdm(training_set):
+        BATCH_SIZE = 5
+        number_of_batches = ceil(len(training_set) / BATCH_SIZE)
+
+        # for (query, document, target) in tqdm(training_set):
+        for batch_index in range(number_of_batches):
+
+            batch = training_set[batch_index * BATCH_SIZE:(batch_index + 1) * BATCH_SIZE]
+
+            queries = []
+            documents = []
+            targets = []
+
+            for (query, document, target) in batch:
+                queries.append(query)
+                documents.append(document)
+                targets.append(target)
 
             optimizer.zero_grad()
 
-            score = model(query, document)
-            loss = criterion(score, CPUorGPUFloatTensor([target]))
-            correct_predictions += (abs(score.item() - target) < 0.5)
+            score = model(queries, documents)
+            loss = criterion(score, dont_care_cuda(torch.FloatTensor(targets)))
+            correct_predictions += torch.sum(abs(torch.FloatTensor(targets) - score.reshape(5)) < 0.5).item()
             loss.backward()
             optimizer.step()
 
@@ -141,10 +195,7 @@ def train(model: Pointwise, device, number_of_epochs: int =15) -> Pointwise:
 
         training_acc = correct_predictions / len(training_set)
 
-        test_model = Pointwise(None, model.token2id)
-        test_model.load_state_dict(model.state_dict())
-        if torch.cuda.is_available(): test_model.cuda()
-        test_acc = evaluate(test_model)
+        test_acc = evaluate(model)
 
         os.makedirs(c.L2R_MODEL_DIR, exist_ok=True)
         with open(c.L2R_TMP_TRAIN_PROGRESS, 'a') as f:
@@ -167,7 +218,7 @@ def evaluate(model: Pointwise) -> float:
     wrong = 0
     for (query, document, target) in test_set:
 
-        prediction = model(query, document)
+        prediction = model([query], [document])
         if abs(prediction.item() - target) < 0.5:
             right += 1
         else:
@@ -178,8 +229,12 @@ def evaluate(model: Pointwise) -> float:
 
 def train_and_save(number_of_epochs: int=15):
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model = Pointwise(device, get_token2id()) # TODO: optionally load model and resume training
+    token2id = get_token2id()
+
+    query_encoder = GRUEncoder(token2id)
+    document_encoder = GRUEncoder(token2id)
+    scorer = CosineScorer()
+    model = Pointwise(query_encoder, document_encoder, scorer)  # TODO: optionally load model and resume training
 
     model = train(model, number_of_epochs)
 
@@ -218,16 +273,9 @@ def load_and_evaluate():
     # print(f'Accuracy: {round(evaluate(model), 4)}')
 
 
-def CPUorGPULongTensor(source):
+def dont_care_cuda(source):
 
     if torch.cuda.is_available():
-        return torch.LongTensor(source).cuda()
+        return source.cuda()
     else:
-        return torch.LongTensor(source)
-
-
-def CPUorGPUFloatTensor(source):
-    if torch.cuda.is_available():
-        return torch.FloatTensor(source).cuda()
-    else:
-        return torch.FloatTensor(source)
+        return source
