@@ -32,8 +32,20 @@ class Encoder(nn.Module):
         self.tokenizer = Tokenizer()
         self.token2id = token2id
 
+        self.document_embedding = nn.Embedding(
+            len(self.token2id),
+            EMBEDDING_DIMENSION
+        )
+
+    def forward(self, documents):
+
+        document_tensors = self.prepare_input(documents)
+        document_embeddings = self.document_embedding(document_tensors)
+
+        return self.encode(document_embeddings)
+
     @abstractmethod
-    def forward(self, input):
+    def encode(self, document_embeddings):
         raise NotImplementedError
 
     def prepare_input(self, documents: [str]) -> torch.LongTensor:
@@ -55,23 +67,23 @@ class GRUEncoder(Encoder):
     def __init__(self, token2id):
         super().__init__(token2id)
 
-        self.document_embedding = nn.Embedding(
-            len(self.token2id),
-            EMBEDDING_DIMENSION
-        )
-
         self.document_encoder = nn.GRU(
             input_size=EMBEDDING_DIMENSION,
             hidden_size=ENCODER_HIDDEN_SIZE
         )
 
-    def forward(self, documents):
-
-        document_tensors = self.prepare_input(documents)
-        document_embeddings = self.document_embedding(document_tensors)
+    def encode(self, document_embeddings):
         (document_encoding, document_hn) = self.document_encoder(document_embeddings)
-
         return document_hn
+
+
+class MaxPoolEncoder(Encoder):
+
+    def __init__(self, token2id):
+        super().__init__(token2id)
+
+    def encode(self, document_embeddings):
+        return torch.unsqueeze(torch.max(document_embeddings, dim=0)[0], dim=0)
 
 
 class Scorer(nn.Module):
@@ -231,8 +243,8 @@ def train_and_save(number_of_epochs: int=15):
 
     token2id = get_token2id()
 
-    query_encoder = GRUEncoder(token2id)
-    document_encoder = GRUEncoder(token2id)
+    query_encoder = MaxPoolEncoder(token2id)
+    document_encoder = MaxPoolEncoder(token2id)
     scorer = CosineScorer()
     model = Pointwise(query_encoder, document_encoder, scorer)  # TODO: optionally load model and resume training
 
