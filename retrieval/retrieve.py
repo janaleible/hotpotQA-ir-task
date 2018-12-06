@@ -1,4 +1,4 @@
-from dataset.dataset import Question, Dataset
+from retrieval.term.dataset import Question, Dataset
 from typing import List, Tuple, Dict
 from services import parallel, sql
 from datetime import datetime
@@ -16,12 +16,12 @@ def load_dataset_batches() -> Tuple[List[List[Question]], int, int]:
     training_set = Dataset.from_file(TRAINING_SET)
     batches = parallel.chunk(CHUNK_SIZE, training_set.questions)
     no_batches = len(batches)
-    no_docs = len(training_set)
+    no_queries = len(training_set)
 
     end = datetime.now()
-    helpers.log(f'Finished loading in {end - start}. Batches: {no_batches}. Documents: {no_docs}.')
+    helpers.log(f'Finished loading in {end - start}. Batches: {no_batches}. Queries: {no_queries}.')
 
-    return batches, no_batches, no_docs
+    return batches, no_batches, no_queries
 
 
 def create_retrieval_db(db_name: str) -> None:

@@ -1,4 +1,4 @@
-from data_processing import trec, titles, ids, embeddings
+from data_processing import trec, title_maps, id_maps, embeddings
 import argparse
 
 if __name__ == '__main__':
@@ -12,11 +12,11 @@ if __name__ == '__main__':
                         choices=['E6B.50', 'E6B.100', 'E6B.200', 'E6B.300'])
     args, _ = parser.parse_known_args()
 
-    if args.action in ['titles', 'all']:
-        titles.build()
     if args.action in ['trec', 'all']:
         trec.build(args.use_less_memory)
+    if args.action in ['titles', 'all']:
+        title_maps.build()
     if args.action in ['ids', 'all']:
-        ids.build()
+        id_maps.build()
     if args.action in ['embeddings', 'all']:
         embeddings.build(args.sub_action)

@@ -13,7 +13,6 @@ from services import helpers
 
 
 class Tokenizer:
-
     stopwords: Union[Set, None]
 
     def __init__(self) -> None:
@@ -82,7 +81,7 @@ class Index(object):
         del self
 
     def __init__(self, env: str = 'default'):
-        helpers.log(f'Loading index {INDRI_INDEX_DIR} with {env}')
+        helpers.log(f'Loading index {INDRI_INDEX_DIR} with {env} query environment.')
         start = datetime.now()
 
         self.index = pyndri.Index(f'{INDRI_INDEX_DIR}')
@@ -126,7 +125,7 @@ class Index(object):
         """Retrieve documents according to unigram text search."""
         return list(self.env.query(f'{self.normalize(text)}', results_requested=request))
 
-    def bigram_query(self, first: str, second: str,  request: int = 5000) -> List[Tuple[int, float]]:
+    def bigram_query(self, first: str, second: str, request: int = 5000) -> List[Tuple[int, float]]:
         """Retrieve documents according to bigram full text search."""
         return list(self.env.query(f'#1({self.normalize(first)} {self.normalize(second)})', results_requested=request))
 
@@ -176,16 +175,23 @@ class Index(object):
         else:
             doc_str = " ".join([self.id2token.get(tid, -1) for tid in doc_tokens if self.id2token.get(tid, -1) != -1])
         if format_paragraph:
-            doc_str = doc_str.replace(EOP, '\n\n').replace(EOS, '. ')
+            doc_str = doc_str.replace(EOP.strip(), '\n\n').replace(EOS.strip(), '. ')
 
         return doc_str
 
-    def get_document_by_title(self, title: str) -> str:
+    def get_document_by_title(self, title: str) -> Tuple[int, ...]:
+        external_id = self.title2wid[title]
+        internal_id = self.external2internal(external_id)
+        document = self.index.document(internal_id)[1]
 
+        return document
+
+    def get_pretty_document_by_title(self, title: str) -> str:
         external_id = self.title2wid[title]
         internal_id = self.external2internal(external_id)
         document = self.index.document(internal_id)
 
-        pretty_document = self.inspect_document(document, include_stop=True, format_paragraph=False)
+        return self.inspect_document(document, include_stop=True, format_paragraph=False)
 
-        return pretty_document
+    def get_document_by_int_id(self, doc_int_id: int) -> Tuple[int, ...]:
+        return self.index.document(doc_int_id)[1]

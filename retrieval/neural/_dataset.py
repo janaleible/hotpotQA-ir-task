@@ -4,14 +4,13 @@ import pickle
 import random
 from tqdm import tqdm
 
-from dataset.dataset import Dataset, Question
+from retrieval.term.dataset import Dataset, Question
 import main_constants as c
 from services.index import Index
 
 
 def get_document(title: str, index: Index):
-
-    return index.get_document_by_title(title)
+    return index.get_pretty_document_by_title(title)
 
 
 def sample_from_tfidf(question: Question, index: Index):
@@ -22,7 +21,8 @@ def sample_from_tfidf(question: Question, index: Index):
     for title in sorted(tfidf_results[question.id], key=tfidf_results[question.id].get, reverse=True):
         if title not in question.gold_articles:
             distractor_documents.append(get_document(title, index))
-            if len(distractor_documents) == 2: break
+            if len(distractor_documents) == 2:
+                break
     return distractor_documents
 
 
@@ -34,7 +34,6 @@ def sample_random(question: Question, index: Index):
 
 
 def build_l2r_dataset():
-
     index = Index()
     dataset = Dataset.from_file(c.TRAINING_SET)
 
@@ -42,7 +41,6 @@ def build_l2r_dataset():
     sample_function = sample_random
 
     for question in tqdm(dataset):
-
         gold_documents = [get_document(title, index) for title in question.gold_articles]
 
         distractor_documents = sample_function(question, index)

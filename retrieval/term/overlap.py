@@ -1,4 +1,4 @@
-from dataset.dataset import Question
+from retrieval.term.dataset import Question
 from services.index import Index
 from collections import Counter
 from main_constants import *
@@ -10,7 +10,7 @@ import nltk
 import os
 
 INDEX: Index
-DIR_NAME = os.path.join(f'{FILTERS_OVERLAP_DIR}.{helpers.training_set_id()}')
+DIR_NAME = os.path.join(f'{OVERLAP_DIR}.{helpers.training_set_id()}')
 DB_NAME = os.path.join(DIR_NAME, 'retrievals.sqlite')
 
 
@@ -21,15 +21,15 @@ def process():
     global INDEX
     INDEX = Index(env='default')
     os.makedirs(DIR_NAME)
-    (batches, no_batches, no_docs), total_filtered = retrieve.load_dataset_batches(), 0
+    (batches, no_batches, no_queries), total_retrieved = retrieve.load_dataset_batches(), 0
     retrieve.create_retrieval_db(DB_NAME)
 
-    helpers.log(f'Filtering documents. Workers: {os.cpu_count()}')
+    helpers.log(f'Retrieving documents. Workers: {os.cpu_count()}')
     start = datetime.now()
-    for batch_filtered in parallel.execute(_process_question_batch, batches):
-        total_filtered += batch_filtered
+    for batch_retrieval in parallel.execute(_process_question_batch, batches):
+        total_retrieved += batch_retrieval
     end = datetime.now()
-    helpers.log(f'Finished filtering in {end - start}. Filtered {total_filtered}/{no_docs}')
+    helpers.log(f'Finished retrieval in {end - start}. Filtered {total_retrieved}/{no_queries}')
 
     global_end = datetime.now()
     helpers.log(f'Finished process in {global_end - global_start}.')
@@ -37,7 +37,7 @@ def process():
 
 def _process_question_batch(question_numbered_batch: Tuple[int, Tuple[Question]]) -> int:
     """If the batch was not previously processed, filter a batch and persist to SQLite database."""
-    (no, questions), filtered = question_numbered_batch, 0
+    (no, questions), retrieved = question_numbered_batch, 0
 
     already_processed = retrieve.check_already_processed(DB_NAME, question_numbered_batch)
     if len(already_processed) == len(questions):
@@ -50,10 +50,10 @@ def _process_question_batch(question_numbered_batch: Tuple[int, Tuple[Question]]
 
         retrieval = _bigram_unigram_5000(question.question, INDEX)
         retrieve.persist_retrieval(DB_NAME, question, retrieval)
-        filtered += 1
-    helpers.log(f'Filtered questions: {filtered}/{len(questions)}.')
+        retrieved += 1
+    helpers.log(f'Retrieved questions: {retrieved}/{len(questions)}.')
 
-    return filtered
+    return retrieved
 
 
 def _bigram_unigram_5000(query: str, index: Index, n: int = 5000) -> List[Tuple[int, float]]:

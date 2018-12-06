@@ -1,5 +1,4 @@
 from typing import List, Dict, Set
-from main_constants import *
 import json
 
 
@@ -31,6 +30,7 @@ class Question(object):
 
     def __str__(self):
         return self.to_json()
+
 
 class Dataset(object):
 

@@ -3,6 +3,8 @@ from datetime import datetime
 import logging
 import os
 
+logging.basicConfig(level='INFO')
+
 
 def log(*args) -> None:
     """Misc logging formatting."""
