@@ -1,10 +1,11 @@
 import argparse
 from retrieval.neural import train
 from retrieval.neural.configs import configs
+from retrieval.neural.visualise import plot
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-a', '--action', type=str, required=True, choices=['data', 'train', 'eval', 'all'],
+    parser.add_argument('-a', '--action', type=str, required=True, choices=['data', 'train', 'eval', 'plot', 'all'],
                         help='Choose task')
     parser.add_argument('-c', '--config', type=str, required=True, choices=['max_pool_abs_cosine_pw', 'mean_pool_bllr_pw', 'max_pool_llr_pw', 'gru_llr_pw', 'mean_pool_llr_pw'],
                         help='Configuration to load.')
@@ -15,6 +16,9 @@ if __name__ == '__main__':
 
     if args.action in ['train', 'all']:
         train.run(configs[args.config])
+
+    if args.action in ['plot', 'all']:
+        plot(configs[args.config])
 
     # if args.action in ['eval', 'all']:
     #     load_and_evaluate()
