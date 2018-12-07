@@ -21,6 +21,8 @@ TOKEN2ID = os.path.join(BASE_DIR, 'data', 'index', 'token2id.tar')
 ID2TOKEN = os.path.join(BASE_DIR, 'data', 'index', 'id2token.tar')
 ID2DF = os.path.join(BASE_DIR, 'data', 'index', 'id2df.tar')
 ID2TF = os.path.join(BASE_DIR, 'data', 'index', 'id2tf.tar')
+PYNDRI2GLOVE = os.path.join(INDEX_DIR, 'pyndri.glove.tar')
+GLOVE2PYNDRI = os.path.join(INDEX_DIR, 'glove2pyndri.tar')
 
 # INDEX
 INDRI_PARAMETERS = os.path.join(BASE_DIR, 'index.xml')
