@@ -4,7 +4,7 @@ from collections import Counter
 from main_constants import *
 from datetime import datetime
 from services import parallel, helpers
-from retrieval import retrieve
+from retrieval.term import retrieve
 from typing import List, Tuple
 import nltk
 import os

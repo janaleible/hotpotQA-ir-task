@@ -1,5 +1,6 @@
-import retrieval
 import argparse
+
+from retrieval import term
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -11,4 +12,5 @@ if __name__ == '__main__':
     args, _ = parser.parse_known_args()
     command = f'{args.group}@{args.model}'
 
-    retrieval.evaluate.process(command)
+    if args.group == 'term':
+        term.evaluate.process(command)

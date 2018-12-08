@@ -10,10 +10,10 @@ import pickle
 
 def load_dataset_batches() -> Tuple[List[List[Question]], int, int]:
     """Load the dataset in batches of ``CHUNK_SIZE`` and calculate lengths."""
-    helpers.log(f'Loading dataset in chunks. Data file: {TRAINING_SET}. Chunk size: {CHUNK_SIZE}.')
+    helpers.log(f'Loading dataset in chunks. Data file: {TRAIN_HOTPOT_SET}. Chunk size: {CHUNK_SIZE}.')
     start = datetime.now()
 
-    training_set = Dataset.from_file(TRAINING_SET)
+    training_set = Dataset.from_file(TRAIN_HOTPOT_SET)
     batches = parallel.chunk(CHUNK_SIZE, training_set.questions)
     no_batches = len(batches)
     no_queries = len(training_set)

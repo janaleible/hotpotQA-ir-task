@@ -49,75 +49,73 @@ class Config(object):
         self.optimizer_kwargs = optimizer_kwargs
 
 
-configs = {
+models = {
     'max_pool_bllr_pw': Config(**{'name': 'max_pool_bllr_pw',
-                                  'train_candidate_db': const.DUMMY_UNIGRAM_TFIDF_DB,
-                                  'train_question_set': const.DUMMY_TRAIN_QUESTION_SET,
-                                  'dev_question_set': const.DUMMY_DEV_QUESTION_SET,
+                                  'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                                  'train_question_set': const.TRAIN_HOTPOT_SET,
+                                  'dev_question_set': const.DEV_HOTPOT_SET,
                                   'query_encoder': MaxPoolEncoder,
                                   'document_encoder': MaxPoolEncoder,
                                   'scorer': BilinearLogisticRegression,
                                   'ranker': Pointwise,
                                   'optimizer': Adam,
                                   'embedding_dim': 50,
-                                  'epochs': 100,
+                                  'epochs': 200,
                                   'trainable': True,
                                   'scorer_kwargs': {
                                       'in_features': 50
                                   }}
                                ),
     'max_pool_llr_pw': Config(**{'name': 'max_pool_llr_pw',
-                                 'train_candidate_db': const.DUMMY_UNIGRAM_TFIDF_DB,
-                                 'train_question_set': const.DUMMY_TRAIN_QUESTION_SET,
-                                 'dev_question_set': const.DUMMY_DEV_QUESTION_SET,
+                                 'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                                 'train_question_set': const.TRAIN_HOTPOT_SET,
+                                 'dev_question_set': const.DEV_HOTPOT_SET,
                                  'query_encoder': MaxPoolEncoder,
                                  'document_encoder': MaxPoolEncoder,
                                  'scorer': LinearLogisticRegression,
                                  'ranker': Pointwise,
                                  'optimizer': Adam,
                                  'embedding_dim': 50,
-                                 'epochs': 100,
+                                 'epochs': 200,
                                  'trainable': True,
                                  'scorer_kwargs': {
                                      'in_features': 50 * 2
                                  }}
                               ),
     'mean_pool_bllr_pw': Config(**{'name': 'mean_pool_bllr_pw',
-                                   'train_candidate_db': const.DUMMY_UNIGRAM_TFIDF_DB,
-                                   'train_question_set': const.DUMMY_TRAIN_QUESTION_SET,
-                                   'dev_question_set': const.DUMMY_DEV_QUESTION_SET,
+                                   'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                                   'train_question_set': const.TRAIN_HOTPOT_SET,
+                                   'dev_question_set': const.DEV_HOTPOT_SET,
                                    'query_encoder': MeanPoolEncoder,
                                    'document_encoder': MeanPoolEncoder,
                                    'scorer': BilinearLogisticRegression,
                                    'ranker': Pointwise,
                                    'optimizer': Adam,
                                    'embedding_dim': 50,
-                                   'epochs': 100,
+                                   'epochs': 200,
                                    'trainable': True,
                                    'scorer_kwargs': {
                                        'in_features': 50
-                                   }}
-                                ),
+                                   }}),
     'mean_pool_llr_pw': Config(**{'name': 'mean_pool_llr_pw',
-                                  'train_candidate_db': const.DUMMY_UNIGRAM_TFIDF_DB,
-                                  'train_question_set': const.DUMMY_TRAIN_QUESTION_SET,
-                                  'dev_question_set': const.DUMMY_DEV_QUESTION_SET,
+                                  'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                                  'train_question_set': const.TRAIN_HOTPOT_SET,
+                                  'dev_question_set': const.DEV_HOTPOT_SET,
                                   'query_encoder': MeanPoolEncoder,
                                   'document_encoder': MeanPoolEncoder,
                                   'scorer': LinearLogisticRegression,
                                   'ranker': Pointwise,
                                   'optimizer': Adam,
                                   'embedding_dim': 50,
-                                  'epochs': 100,
+                                  'epochs': 200,
                                   'trainable': True,
                                   'scorer_kwargs': {
                                       'in_features': 50 * 2
-                                  }}
-                               ),
+                                  }}),
     'gru_llr_pw': Config(**{'name': 'max_pool_llr_pw',
-                            'train_candidate_db': const.DUMMY_UNIGRAM_TFIDF_DB,
-                            'train_question_set': const.DUMMY_TRAIN_QUESTION_SET,
-                            'dev_question_set': const.DUMMY_DEV_QUESTION_SET,
+                            'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                            'train_question_set': const.TRAIN_HOTPOT_SET,
+                            'dev_question_set': const.DEV_HOTPOT_SET,
                             'query_encoder': GRUEncoder,
                             'document_encoder': GRUEncoder,
                             'scorer': LinearLogisticRegression,
@@ -128,6 +126,5 @@ configs = {
                             'trainable': True,
                             'scorer_kwargs': {
                                 'in_features': 50 * 2
-                            }}
-                         )
+                            }})
 }

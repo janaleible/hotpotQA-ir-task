@@ -1,10 +1,10 @@
-from data_processing import trec, title_maps, id_maps, embeddings
+from data_processing import trec, title_maps, id_maps, embeddings, reference
 import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--action', type=str, required=True,
-                        choices=['trec', 'titles', 'ids', 'embeddings', 'all'],
+                        choices=['trec', 'titles', 'ids', 'embeddings',  'reference', 'all'],
                         help='Data processing action. trec=build TREC corpus from first paragraph of each document.')
     parser.add_argument('-u', '--use_less_memory', type=bool, default=True,
                         help='Use less memory. Useful for building TREC corpus.')
@@ -20,3 +20,5 @@ if __name__ == '__main__':
         id_maps.build()
     if args.action in ['embeddings', 'all']:
         embeddings.build(args.sub_action)
+    if args.action in ['reference', 'all']:
+        reference.build()

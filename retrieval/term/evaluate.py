@@ -4,56 +4,16 @@ from tqdm import tqdm
 from main_constants import *
 from typing import Dict, Tuple
 import pytrec_eval
-import collections as cl
 import json
 import os
 from services import helpers, sql
+from services.evaluation import Evaluator, Run
 
-EVALUATION = Tuple[Dict[str, Dict[str, float]], Dict[str, float]]
 _WID2TITLE: Dict[int, str]
 _INT2WID: Dict[int, int]
 
 
-class Run(dict):
-    def add_question(self, _id, ranking):
-        self[_id] = ranking
-
-    def write_to_file(self, path):
-        with open(path, 'w', encoding='utf-8') as file:
-            json.dump(self, file)
-
-
-class Evaluator:
-    _evaluator: pytrec_eval.RelevanceEvaluator
-    reference: Dict[str, Dict[str, int]]
-
-    def __init__(self, reference_path: str, measures: set = frozenset({'map', 'ndcg'})) -> None:
-        with open(reference_path, 'r') as reference_file:
-            self.reference = json.load(reference_file)
-            self._evaluator = pytrec_eval.RelevanceEvaluator(self.reference, set(measures))
-
-    def evaluate(self, run: Run, eval_path: str = None, eval_agg_path: str = None, save: bool = True) -> EVALUATION:
-        trec_eval = self._evaluator.evaluate(run)
-        trec_eval_agg = self.aggregate(trec_eval)
-
-        if save:
-            with open(eval_path, 'w') as file:
-                json.dump(trec_eval, file, indent=True)
-            with open(eval_agg_path, 'w') as file:
-                json.dump(trec_eval_agg, file, indent=True)
-
-        return trec_eval, trec_eval_agg
-
-    def aggregate(self, trec_eval: Dict[str, Dict[str, float]]) -> Dict[str, float]:
-        eval_aggr = cl.defaultdict(float)
-        for trec_eval_item in trec_eval.values():
-            for measure, value, in trec_eval_item.items():
-                eval_aggr[measure] += value / len(trec_eval)
-
-        return eval_aggr
-
-
-def process(command: str):
+def process(command: str) -> Tuple[Dict[str, Dict[str, float]], Dict[str, float]]:
     helpers.log('Loading int2wid and wid2title mappings.')
     global _WID2TITLE, _INT2WID
     with open(WID2TITLE, 'rb') as file:
@@ -89,7 +49,7 @@ def process(command: str):
     return trec_eval, trec_eval_agg
 
 
-def _create_trec_eval_reference(dir_path: str):
+def _create_trec_eval_reference(dir_path: str) -> None:
     reference_path = os.path.join(dir_path, 'reference.json')
     reference = {}
     with sqlite3.connect(os.path.join(dir_path, 'retrievals.sqlite')) as db:
@@ -108,7 +68,7 @@ def _create_trec_eval_reference(dir_path: str):
     return
 
 
-def _create_trec_run(dir_path: str):
+def _create_trec_run(dir_path: str) -> Run:
     run_path = os.path.join(dir_path, 'run.json')
     run = Run()
     with sqlite3.connect(os.path.join(dir_path, 'retrievals.sqlite')) as db:
@@ -121,7 +81,7 @@ def _create_trec_run(dir_path: str):
                 question_ranking = pickle.loads(question_ranking)
                 question_ranking = {_WID2TITLE[_INT2WID[_id]]: float(score)
                                     for (_id, score) in question_ranking}
-                run.add_question(question_id, question_ranking)
+                run.add_ranking(question_id, question_ranking)
                 pbar.update(1)
     run.write_to_file(run_path)
 

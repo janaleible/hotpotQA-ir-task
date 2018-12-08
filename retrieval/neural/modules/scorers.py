@@ -6,7 +6,7 @@ from abc import abstractmethod
 class Scorer(nn.Module):
 
     @abstractmethod
-    def forward(self, document_encodings: torch.FloatTensor, query_encodings: torch.FloatTensor) -> torch.FloatTensor:
+    def forward(self, document_encodings: torch.float, query_encodings: torch.float) -> torch.float:
         raise NotImplementedError
 
 
@@ -17,7 +17,7 @@ class CosineScorer(Scorer):
 
         self.similarity_measure = nn.CosineSimilarity(dim=2)
 
-    def forward(self, document_encodings: torch.FloatTensor, query_encodings: torch.FloatTensor) -> torch.FloatTensor:
+    def forward(self, document_encodings: torch.float, query_encodings: torch.float) -> torch.float:
         batch_size = document_encodings.shape[0]
         return self.similarity_measure(document_encodings, query_encodings).view(batch_size, 1)
 
@@ -29,7 +29,7 @@ class AbsoluteCosineScorer(Scorer):
 
         self.similarity_measure = nn.CosineSimilarity(dim=2)
 
-    def forward(self, document_encodings: torch.FloatTensor, query_encodings: torch.FloatTensor) -> torch.FloatTensor:
+    def forward(self, document_encodings: torch.float, query_encodings: torch.float) -> torch.float:
         batch_size = document_encodings.shape[0]
         similarity = self.similarity_measure(document_encodings, query_encodings)
 
@@ -41,10 +41,15 @@ class LinearLogisticRegression(Scorer):
         super().__init__()
 
         self.linear = nn.Linear(in_features, 1, True)
+        self.sigmoid = nn.Sigmoid()
 
-    def forward(self, document_encodings: torch.FloatTensor, query_encodings: torch.FloatTensor) -> torch.FloatTensor:
+    def forward(self, document_encodings: torch.float, query_encodings: torch.float) -> torch.float:
         batch_size = document_encodings.shape[0]
-        return self.linear(torch.cat([document_encodings, query_encodings], dim=2)).view(batch_size, 1)
+        energies = self.linear(torch.cat([document_encodings, query_encodings], dim=2)).view(batch_size, 1)
+        if self.training:
+            return energies
+        else:
+            return self.sigmoid(energies)
 
 
 class BilinearLogisticRegression(Scorer):
@@ -52,7 +57,13 @@ class BilinearLogisticRegression(Scorer):
         super().__init__()
 
         self.bilinear = nn.Bilinear(in_features, in_features, 1, True)
+        self.sigmoid = nn.Sigmoid()
 
-    def forward(self, document_encodings: torch.FloatTensor, query_encodings: torch.FloatTensor) -> torch.FloatTensor:
+    def forward(self, document_encodings: torch.float, query_encodings: torch.float) -> torch.float:
         batch_size = document_encodings.shape[0]
-        return self.bilinear(document_encodings, query_encodings).view(batch_size, 1)
+        energies = self.bilinear(document_encodings, query_encodings).view(batch_size, 1)
+
+        if self.training:
+            return energies
+        else:
+            return self.sigmoid(energies)

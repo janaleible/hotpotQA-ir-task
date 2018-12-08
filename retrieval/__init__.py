@@ -4,6 +4,5 @@ Contains:
     -- more advanced neural methods
 """
 
-from retrieval import evaluate
 from retrieval import term
 from retrieval import neural

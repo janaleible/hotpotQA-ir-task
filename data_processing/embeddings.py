@@ -1,9 +1,7 @@
 from tqdm import tqdm
 import pickle
-from services import helpers
 from main_constants import *
 import numpy as np
-import bcolz
 
 
 def build(emb: str):
@@ -26,16 +24,14 @@ def build(emb: str):
         token2id = pickle.load(file)
 
     dim = int(emb.split('.')[-1])
-    vocab_size = 400000
-    # embeddings = bcolz.carray(np.random.normal(loc=0.0, scale=0.5, size=(len(token2id), dim)), rootdir=embeddings, mode='w')
-    # embeddings = bcolz.carray(np.zeros((len(token2id), dim)), rootdir=embeddings, mode='w')
-    embeddings = np.zeros((vocab_size + 1, dim))
+
+    embeddings = np.zeros((VOCAB_SIZE + 1, dim))
 
     with open(embeddings_txt, 'rb') as f:
 
         pyndri2glove = {0: 0}
         glove2pyndri = {0: 0}
-        glove_index = 1 # start at 1 to reserve 0 as unk
+        glove_index = 1  # start at 1 to reserve 0 as unk
 
         for row_num, line in enumerate(tqdm(f.readlines())):
 
@@ -51,15 +47,16 @@ def build(emb: str):
 
                 glove_index += 1
 
-        # fill embeddings[0] with average of all embeddings for unknown token (as of https://groups.google.com/d/msg/globalvectors/9w8ZADXJclA/hRdn4prm-XUJ)
+        # fill embeddings[0] with average of all embeddings for unknown token
+        # (as of https://groups.google.com/d/msg/globalvectors/9w8ZADXJclA/hRdn4prm-XUJ)
         # filter out all-zero rows first
         embeddings[0] = np.mean(embeddings[np.any(embeddings, axis=1)], axis=0)
 
         # generate random embeddings for the most common words in pyndri that do not appear in glove
         pyndri_index = 1
-        while len(pyndri2glove) <= vocab_size:
+        while len(pyndri2glove) <= VOCAB_SIZE:
 
-            if not pyndri_index in pyndri2glove.keys():
+            if pyndri_index not in pyndri2glove.keys():
                 embeddings[glove_index] = np.random.normal(loc=0.0, scale=0.5, size=(1, dim))
 
                 pyndri2glove[pyndri_index] = glove_index
@@ -75,5 +72,4 @@ def build(emb: str):
     with open(GLOVE2PYNDRI, 'wb') as file:
         pickle.dump(glove2pyndri, file)
 
-    # helpers.log(f'{count}/{len(token2id)}')
     np.savez_compressed(embeddings_file, array=embeddings)

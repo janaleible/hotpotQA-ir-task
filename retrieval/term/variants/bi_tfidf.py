@@ -5,13 +5,13 @@ from retrieval.term.dataset import Question
 from services.index import Index
 from datetime import datetime
 from main_constants import *
-from retrieval import retrieve
+from retrieval.term import retrieve
 from typing import Tuple, List
 import collections as cl
 import os
 
 INDEX: Index
-DIR_NAME = os.path.join(f'{PRF_LM_DIR}.{helpers.training_set_id()}')
+DIR_NAME = os.path.join(f'{BIGRAM_TFIDF_DIR}.{helpers.training_set_id()}')
 DB_NAME = os.path.join(DIR_NAME, 'retrievals.sqlite')
 
 
@@ -20,7 +20,7 @@ def process():
     filtering per question. Processed in parallel."""
     global_start = datetime.now()
     global INDEX
-    INDEX = Index(env='prf')
+    INDEX = Index(env='tfidf')
     os.makedirs(DIR_NAME)
     (batches, no_batches, no_queries), total_retrieved = retrieve.load_dataset_batches(), 0
     retrieve.create_retrieval_db(DB_NAME)
@@ -48,10 +48,10 @@ def _process_question_batch(question_numbered_batch: Tuple[int, Tuple[Question]]
     for question in questions:
         if already_processed.get(question.id, False):
             continue
-        retrieval = INDEX.unigram_query(question.question, request=5000)
+        retrieval = _full_bigram_query(question)
         retrieve.persist_retrieval(DB_NAME, question, retrieval)
         retrieved += 1
-    helpers.log(f'Retrieved questions: {retrieved}/{len(questions)}.')
+        helpers.log(f'Retrieved questions: {retrieved}/{len(questions)}.')
 
     return retrieved
 

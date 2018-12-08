@@ -1,11 +1,14 @@
-import main_constants as const
 from retrieval.neural.modules.encoders import Encoder
 from retrieval.neural.modules.scorers import Scorer
+import main_constants as const
+from abc import abstractmethod
 from torch import nn
+import torch
 
 
-class Pointwise(nn.Module):
+class Ranker(nn.Module):
     epochs_trained: int
+    weight: float
 
     def __init__(self, query_encoder: Encoder, document_encoder: Encoder, scorer: Scorer):
         super().__init__()
@@ -16,9 +19,19 @@ class Pointwise(nn.Module):
         self.document_encoder = document_encoder
         self.scorer = scorer
 
-        self.criterion = nn.BCEWithLogitsLoss().to(device=const.DEVICE)
+    @abstractmethod
+    def forward(self, query: torch.tensor, document: torch.tensor):
+        raise NotImplementedError
 
-    def forward(self, query: [str], document: [str]):
+
+class Pointwise(Ranker):
+
+    def __init__(self, query_encoder: Encoder, document_encoder: Encoder, scorer: Scorer):
+        super().__init__(query_encoder, document_encoder, scorer)
+        self.weight = const.NO_CANDIDATES / 2  # ratio of relevant to irrelevant documents.
+        self.criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.weight])).to(device=const.DEVICE)
+
+    def forward(self, query: torch.tensor, document: torch.tensor) -> torch.tensor:
         query_hns = self.query_encoder(query)
         document_hns = self.document_encoder(document)
 

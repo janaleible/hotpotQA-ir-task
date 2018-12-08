@@ -23,7 +23,7 @@ EASY = 2
 def accuracies(database: str, table: str):
     """Compute accuracy over a dataset given a retrieval database.
     Statistics are split over question types and levels."""
-    dataset = Dataset.from_file(TRAINING_SET)
+    dataset = Dataset.from_file(TRAIN_HOTPOT_SET)
     global INDEX
     INDEX = Index()
 

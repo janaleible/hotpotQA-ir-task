@@ -1,138 +1,142 @@
 import csv
-import json
 import os
+import pickle
 import random
 import shutil
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, Dict
 import numpy
 import pytrec_eval
-from retrieval.evaluate import Evaluator, Run
+from tqdm import tqdm
+
+from services.evaluation import Evaluator, Run
 from retrieval.neural.configs import Config
-from retrieval.neural.dataset import TrainDataset, DevDataset
+from retrieval.neural.dataset import QueryDocumentsDataset
 from torch.utils.data import DataLoader
 import main_constants as const
 from torch import nn, optim
 import torch
 from services import helpers
-from services.index import Index
 
-INDEX: Index
+METRICS = Tuple[float, float, float, float]
 random.seed(42)
 torch.random.manual_seed(42)
 numpy.random.seed(42)
 
+INT2WID: Dict[int, int]
+WID2TITLE: Dict[int, str]
+
 
 def run(config: Config) -> None:
-    global INDEX
-    INDEX = Index('tfidf')
-
     start = datetime.now()
+    with open(const.INT2WID, 'rb') as file:
+        global INT2WID
+        INT2WID = pickle.load(file)
+    with open(const.WID2TITLE, 'rb') as file:
+        global WID2TITLE
+        WID2TITLE = pickle.load(file)
     query_encoder = config.query_encoder(config.embedding_dim)
     document_encoder = config.document_encoder(config.embedding_dim)
     scorer = config.scorer(**config.scorer_kwargs)
     model = config.ranker(query_encoder, document_encoder, scorer).to(device=const.DEVICE)
     # noinspection PyCallingNonCallable
     optimizer = config.optimizer(model.parameters(), **config.optimizer_kwargs)
-    helpers.log(f'Loaded model and optimizer in {datetime.now() - start}.')
+    helpers.log(f'Loaded maps, model, and optimizer in {datetime.now() - start}.')
 
-    train_dataset = TrainDataset(INDEX, config.train_candidate_db, config.train_question_set, True)
-    dev_dataset = DevDataset(INDEX, config.dev_question_set)
-    train_loader = DataLoader(train_dataset, const.BATCH_SIZE, True, collate_fn=TrainDataset.collate, num_workers=8)
+    train_loader, dev_loader = _load_datasets()
 
-    best_accuracy = _load_checkpoint(model, optimizer, config)
+    best_acc = _load_checkpoint(model, optimizer, config)
     remaining_epochs = config.epochs - model.epochs_trained
     for epoch in range(remaining_epochs):
         is_best = False
 
         # train
-        train_loss, train_correct_predictions = _train_epoch(model, optimizer, train_loader, config)
-        train_acc = train_correct_predictions / len(train_dataset)
-        helpers.log(f'Epoch {model.epochs_trained}: Loss = {train_loss}')
+        train_loss = _train_epoch(model, optimizer, train_loader, config)
 
-        # evaluate
-        # dev_acc, map_10, ndcg_10, recall_10 = _evaluate_epoch(model, dev_dataset)
-        dev_acc = 0
-        # save statistics
-        # _save_statistics(config.name, epoch, train_loss, train_acc, dev_acc, map_10, ndcg_10, recall_10)
-        _save_statistics(config.name, epoch, train_loss, train_acc, -1, -1, -1, -1)
+        # evaluate and save statistics
+        train_stats = _evaluate_epoch(model, train_loader)
+        dev_stats = _evaluate_epoch(model, dev_loader)
+        _save_epoch_stats(config.name, model.epochs_trained, train_loss, train_stats, dev_stats)
 
         # save model
         model.epochs_trained += 1
-        if dev_acc >= best_accuracy:
-            best_accuracy = dev_acc
+        if dev_stats[0] >= best_acc:
+            best_acc = dev_stats[0]
             is_best = True
-        _save_checkpoint(config.name, model, optimizer, best_accuracy, is_best)
-
-    _evaluate_epoch(model, dev_dataset)
+        _save_checkpoint(config.name, model, optimizer, best_acc, is_best)
 
     return
 
 
-def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: DataLoader, config: Config):
-    epoch_loss = 0
-    correct_predictions = 0
-    for idx, batch in enumerate(data_loader):
-        (queries, documents, targets, _) = batch
-        batch_size = len(queries)
+def _load_datasets():
+    train_dataset = QueryDocumentsDataset(const.TRAIN_UNIGRAM_TFIDF_CANDIDATES)
+    dev_dataset = QueryDocumentsDataset(const.DEV_UNIGRAM_TFIDF_CANDIDATES)
+    train_loader = DataLoader(train_dataset, const.BATCH_SIZE, True,
+                              collate_fn=QueryDocumentsDataset.collate, num_workers=8)
+    dev_loader = DataLoader(dev_dataset, const.BATCH_SIZE, True,
+                            collate_fn=QueryDocumentsDataset.collate, num_workers=8)
 
-        optimizer.zero_grad()
+    return train_loader, dev_loader
+
+
+def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: DataLoader, config: Config) -> float:
+    model.train()
+    epoch_loss = 0
+    for idx, batch in enumerate(data_loader):
+        (queries, documents, targets, _, _) = batch
+        batch_size = len(queries)
 
         scores = model(queries, documents)
         loss = model.criterion(scores, targets)
+
         if config.trainable:
             loss.backward()
             optimizer.step()
+        optimizer.zero_grad()
 
         # undo elementwise mean and save epoch loss
         epoch_loss += loss.item() * batch_size
-        correct_predictions += torch.sum(torch.abs(targets - scores) < 0.5).item()
         del loss
 
-    return epoch_loss / len(data_loader.dataset), correct_predictions
+    return epoch_loss / len(data_loader.dataset)
 
 
-def _evaluate_epoch(model: nn.Module, dev_dataset: torch.utils.data.Dataset) -> Tuple[float, float, float, float]:
+def _evaluate_epoch(model: nn.Module, data_loader: DataLoader) -> METRICS:
+    model.eval()
+    epoch_run = Run()
+    epoch_eval = Evaluator(const.TRAIN_TREC_REFERENCE, measures=pytrec_eval.supported_measures)
+    acc = 0
     with torch.no_grad():
-        correct_predictions = 0
-        evaluator = Evaluator(const.DEV_DUMMY_TREC_REFERENCE, measures=pytrec_eval.supported_measures)
-        eval_run = Run()
-        for idx in range(len(dev_dataset)):
-            (query, retrieved_docs, golden_docs, retrieved_titles, golden_titles, question_id) = dev_dataset[idx]
-            ranking_dict = {}
-            for i in range(len(retrieved_docs)):
-                ranking_dict[retrieved_titles[i]] = model(torch.tensor(query).unsqueeze(dim=0),
-                                                          torch.tensor(retrieved_docs[i]).unsqueeze(dim=0)).item()
-            eval_run.add_question(question_id, ranking_dict)
+        for idx, batch in enumerate(data_loader):
+            (questions, documents, targets, question_ids, document_ids) = batch
 
-            for doc in golden_docs:
-                correct_predictions += torch.sum(
-                    model(torch.tensor(query).unsqueeze(dim=0), torch.tensor(doc).unsqueeze(dim=0)) > 0.5).item()
-            irrelevant_count = 0
-            i = 0
-            while irrelevant_count < 2:
-                if retrieved_docs[i] not in golden_docs:
-                    correct_predictions += torch.sum(
-                        model(torch.tensor(query).unsqueeze(dim=0),
-                              torch.tensor(retrieved_docs[i]).unsqueeze(dim=0)) < 0.5).item()
-                    irrelevant_count += 1
-                i += 1
-        json.dump(eval_run, open('./data/run.json', 'w'), indent=True)
-        _, trec_eval_agg = evaluator.evaluate(eval_run, save=False)
-        dev_accuracy = correct_predictions / (4 * len(dev_dataset))
+            scores = model(questions, documents)
 
-    return dev_accuracy, trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10']
+            for i in range(len(questions)):
+                question_id = question_ids[i]
+                document_id = document_ids[i]
+                title = WID2TITLE[INT2WID[document_id]]
+                epoch_run.update_ranking(question_id, title, scores[i].item())
+            acc += torch.mean((torch.round(scores) == targets).to(dtype=torch.float))
+        _, trec_eval_agg = epoch_eval.evaluate(epoch_run, save=False)
+        return acc.item(), trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10']
 
 
-def _save_statistics(name: str, epoch: int, mean_epoch_loss: float, train_acc: float, dev_acc: float, map_10: float, ndcg_10: float, recall_10: float):
+def _save_epoch_stats(name: str, epoch: int, train_loss: float,
+                      train_stats: Tuple[float, ...], dev_stats: Tuple[float, ...]):
     os.makedirs(const.L2R_MODEL_DIR.format(name), exist_ok=True)
     with open(const.L2R_TRAIN_PROGRESS.format(name), 'a') as f:
         writer = csv.writer(f)
-        writer.writerow([epoch, mean_epoch_loss, train_acc, dev_acc, map_10, ndcg_10, recall_10])
+        writer.writerow([epoch, train_loss, *train_stats, *dev_stats])
+    helpers.log(f'[Epoch {epoch:03d}]\t[Train Acc:\t{train_stats[0]:0.4f}][Train MAP@10:\t{train_stats[1]:0.4f}]'
+                f'[Train NDCG@10:\t{train_stats[2]:0.4f}][Train Recall@10:\t{train_stats[3]:0.4f}]'
+                f'[Train Loss:\t{train_loss:0.4f}]')
+    helpers.log(f'[Epoch {epoch:03d}]\t[Dev Acc:\t{dev_stats[0]:0.4f}][Dev MAP@10:\t{dev_stats[1]:0.4f}]'
+                f'[Dev NDCG@10:\t{dev_stats[2]:0.4f}][Dev Recall@10:\t\t{dev_stats[3]:0.4f}]')
 
 
 def _load_checkpoint(model: nn.Module, optimizer: optim.Optimizer, config: Config):
-    best_accuracy = 0
+    best_acc = 0
     start = datetime.now()
     if os.path.isfile(const.L2R_TRAIN_PROGRESS.format(config.name)):
         with open(const.L2R_MODEL.format(config.name), 'rb') as file:
@@ -141,9 +145,9 @@ def _load_checkpoint(model: nn.Module, optimizer: optim.Optimizer, config: Confi
         optimizer.load_state_dict(checkpoint['optimizer'])
         model.epochs_trained = checkpoint['epoch']
 
-        best_accuracy = checkpoint['best_accuracy']
-        helpers.log(f'Loading checkpoint from {const.L2R_MODEL.format(config.name)} in {datetime.now() - start}.')
-    return best_accuracy
+        best_acc = checkpoint['best_accuracy']
+        helpers.log(f'Loaded checkpoint from {const.L2R_MODEL.format(config.name)} in {datetime.now() - start}.')
+    return best_acc
 
 
 def _save_checkpoint(name: str, model: nn.Module, optimizer: optim.Optimizer, best_accuracy: float, is_best: bool):

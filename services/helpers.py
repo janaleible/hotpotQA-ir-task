@@ -1,4 +1,4 @@
-from main_constants import TRAINING_SET
+from main_constants import TRAIN_HOTPOT_SET
 from datetime import datetime
 import logging
 import os
@@ -14,4 +14,4 @@ def log(*args) -> None:
 
 
 def training_set_id():
-    return TRAINING_SET.split('/')[-1].split('.json')[0].split('_')[-1]
+    return TRAIN_HOTPOT_SET.split('/')[-1].split('.json')[0].split('_')[-1]
