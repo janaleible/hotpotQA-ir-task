@@ -83,13 +83,13 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
     model.train()
     epoch_loss = 0
     for idx, batch in enumerate(data_loader):
-        (queries, documents, targets, _, _) = batch
-        batch_size = len(queries)
-        queries = queries.to(const.DEVICE)
+        (questions, documents, targets, _, _) = batch
+        batch_size = len(questions)
+        questions = questions.to(const.DEVICE)
         documents = documents.to(const.DEVICE)
         targets = targets.to(const.DEVICE)
 
-        scores = model(queries, documents)
+        scores = model(questions, documents)
         loss = model.criterion(scores, targets)
 
         if config.trainable:
@@ -112,6 +112,9 @@ def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool) -> ME
     with torch.no_grad():
         for idx, batch in enumerate(data_loader):
             (questions, documents, targets, question_ids, document_ids) = batch
+            questions = questions.to(const.DEVICE)
+            documents = documents.to(const.DEVICE)
+            targets = targets.to(const.DEVICE)
 
             scores = model(questions, documents)
 
@@ -123,8 +126,8 @@ def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool) -> ME
             acc += torch.mean((torch.round(scores) == targets).to(dtype=torch.float))
         _, trec_eval_agg = epoch_eval.evaluate(epoch_run, save=save)
         return acc.item(), \
-               trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
-               trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100']
+            trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
+            trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100']
 
 
 def _save_epoch_stats(name: str, epoch: int, train_loss: float,
