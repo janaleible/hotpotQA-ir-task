@@ -67,14 +67,13 @@ def run(config: Config) -> None:
 
             train_stats = _evaluate_epoch(model, ct.TRAIN_TREC_REFERENCE, train_loader,
                                           trec_eval_train, trec_eval_agg_train, last_epoch)
-            # dev_stats = _evaluate_epoch(model, ct.DEV_TREC_REFERENCE, dev_loader,
-            #                             trec_eval_dev, trec_eval_agg_dev, last_epoch)
-            # _save_epoch_stats(config.name, model.epochs_trained, train_loss, train_stats, dev_stats)
-            _save_epoch_stats(config.name, model.epochs_trained, train_loss, train_stats, ())
+            dev_stats = _evaluate_epoch(model, ct.DEV_TREC_REFERENCE, dev_loader,
+                                        trec_eval_dev, trec_eval_agg_dev, last_epoch)
+            _save_epoch_stats(config.name, model.epochs_trained, train_loss, train_stats, dev_stats)
             # save model
-            # if dev_stats[0] >= best_acc:
-            #     best_acc = dev_stats[0]
-            #     is_best = True
+            if dev_stats[0] >= best_acc:
+                best_acc = dev_stats[0]
+                is_best = True
             _save_checkpoint(config.name, model, optimizer, best_acc, is_best)
 
     return
@@ -136,7 +135,9 @@ def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_ev
                 document_id = document_ids[i]
                 title = WID2TITLE[INT2WID[document_id]]
                 epoch_run.update_ranking(question_id, title, scores[i].item())
-            acc += torch.mean((torch.round(scores) == targets).to(dtype=torch.float))
+            acc += torch.sum((torch.round(scores) == targets).to(dtype=torch.float))
+
+        acc = acc / len(data_loader.dataset)
         _, trec_eval_agg = epoch_eval.evaluate(epoch_run, trec_eval, trec_eval_agg, save)
         return acc.item(), \
                trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
@@ -155,11 +156,11 @@ def _save_epoch_stats(name: str, epoch: int, train_loss: float,
                 f'[Train Recall@100:\t{train_stats[6]:0.4f}]'
                 f'[Train Loss:\t{train_loss:0.4f}]'
                 )
-    # helpers.log(f'[Epoch {epoch:03d}]\t[Dev Acc:\t{dev_stats[0]:0.4f}]'
-    #             f'[Dev MAP@10:\t{dev_stats[1]:0.4f}][Dev NDCG@10:\t{dev_stats[2]:0.4f}]'
-    #             f'[Dev Recall@10:\t\t{dev_stats[3]:0.4f}]'
-    #             f'[Dev MAP@100:\t{dev_stats[4]:0.4f}][Dev NDCG@100:\t{dev_stats[5]:0.4f}]'
-    #             f'[Dev Recall@100:\t\t{dev_stats[6]:0.4f}]')
+    helpers.log(f'[Epoch {epoch:03d}]\t[Dev Acc:\t{dev_stats[0]:0.4f}]'
+                f'[Dev MAP@10:\t{dev_stats[1]:0.4f}][Dev NDCG@10:\t{dev_stats[2]:0.4f}]'
+                f'[Dev Recall@10:\t\t{dev_stats[3]:0.4f}]'
+                f'[Dev MAP@100:\t{dev_stats[4]:0.4f}][Dev NDCG@100:\t{dev_stats[5]:0.4f}]'
+                f'[Dev Recall@100:\t\t{dev_stats[6]:0.4f}]')
 
 
 def _load_checkpoint(model: nn.Module, optimizer: optim.Optimizer, config: Config):
