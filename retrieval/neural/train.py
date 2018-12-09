@@ -18,7 +18,7 @@ from torch import nn, optim
 import torch
 from services import helpers
 
-METRICS = Tuple[float, float, float, float]
+METRICS = Tuple[float, float, float, float, float ,float, float]
 random.seed(42)
 torch.random.manual_seed(42)
 numpy.random.seed(42)
@@ -49,13 +49,14 @@ def run(config: Config) -> None:
     remaining_epochs = config.epochs - model.epochs_trained
     for epoch in range(remaining_epochs):
         is_best = False
+        last_epoch = (model.epochs_trained + 1) == config.epochs
 
         # train
         train_loss = _train_epoch(model, optimizer, train_loader, config)
 
         # evaluate and save statistics
-        train_stats = _evaluate_epoch(model, train_loader)
-        dev_stats = _evaluate_epoch(model, dev_loader)
+        train_stats = _evaluate_epoch(model, train_loader, last_epoch)
+        dev_stats = _evaluate_epoch(model, dev_loader, last_epoch)
         _save_epoch_stats(config.name, model.epochs_trained, train_loss, train_stats, dev_stats)
 
         # save model
@@ -101,7 +102,7 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
     return epoch_loss / len(data_loader.dataset)
 
 
-def _evaluate_epoch(model: nn.Module, data_loader: DataLoader) -> METRICS:
+def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool) -> METRICS:
     model.eval()
     epoch_run = Run()
     epoch_eval = Evaluator(const.TRAIN_TREC_REFERENCE, measures=pytrec_eval.supported_measures)
@@ -118,8 +119,10 @@ def _evaluate_epoch(model: nn.Module, data_loader: DataLoader) -> METRICS:
                 title = WID2TITLE[INT2WID[document_id]]
                 epoch_run.update_ranking(question_id, title, scores[i].item())
             acc += torch.mean((torch.round(scores) == targets).to(dtype=torch.float))
-        _, trec_eval_agg = epoch_eval.evaluate(epoch_run, save=False)
-        return acc.item(), trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10']
+        _, trec_eval_agg = epoch_eval.evaluate(epoch_run, save=save)
+        return acc.item(), \
+            trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
+            trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100']
 
 
 def _save_epoch_stats(name: str, epoch: int, train_loss: float,
@@ -128,11 +131,18 @@ def _save_epoch_stats(name: str, epoch: int, train_loss: float,
     with open(const.L2R_TRAIN_PROGRESS.format(name), 'a') as f:
         writer = csv.writer(f)
         writer.writerow([epoch, train_loss, *train_stats, *dev_stats])
-    helpers.log(f'[Epoch {epoch:03d}]\t[Train Acc:\t{train_stats[0]:0.4f}][Train MAP@10:\t{train_stats[1]:0.4f}]'
-                f'[Train NDCG@10:\t{train_stats[2]:0.4f}][Train Recall@10:\t{train_stats[3]:0.4f}]'
-                f'[Train Loss:\t{train_loss:0.4f}]')
-    helpers.log(f'[Epoch {epoch:03d}]\t[Dev Acc:\t{dev_stats[0]:0.4f}][Dev MAP@10:\t{dev_stats[1]:0.4f}]'
-                f'[Dev NDCG@10:\t{dev_stats[2]:0.4f}][Dev Recall@10:\t\t{dev_stats[3]:0.4f}]')
+    helpers.log(f'[Epoch {epoch:03d}]\t[Train Acc:\t{train_stats[0]:0.4f}]'
+                f'[Train MAP@10:\t{train_stats[1]:0.4f}][Train NDCG@10:\t{train_stats[2]:0.4f}]'
+                f'[Train Recall@10:\t{train_stats[3]:0.4f}]'
+                f'[Train MAP@100:\t{train_stats[4]:0.4f}][Train NDCG@100:\t{train_stats[5]:0.4f}]'
+                f'[Train Recall@100:\t{train_stats[6]:0.4f}]'
+                f'[Train Loss:\t{train_loss:0.4f}]'
+                )
+    helpers.log(f'[Epoch {epoch:03d}]\t[Dev Acc:\t{dev_stats[0]:0.4f}]'
+                f'[Dev MAP@10:\t{dev_stats[1]:0.4f}][Dev NDCG@10:\t{dev_stats[2]:0.4f}]'
+                f'[Dev Recall@10:\t\t{dev_stats[3]:0.4f}]'
+                f'[Dev MAP@100:\t{dev_stats[4]:0.4f}][Dev NDCG@100:\t{dev_stats[5]:0.4f}]'
+                f'[Dev Recall@100:\t\t{dev_stats[6]:0.4f}]')
 
 
 def _load_checkpoint(model: nn.Module, optimizer: optim.Optimizer, config: Config):
