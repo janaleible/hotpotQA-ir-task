@@ -62,8 +62,8 @@ L2R_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint.pt')
 L2R_BEST_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint_best.pt')
 L2R_TRAIN_PROGRESS = os.path.join(L2R_MODEL_DIR, 'learning_progress.csv')
 L2R_LEARNING_PROGRESS_PLOT = os.path.join(L2R_MODEL_DIR, 'learning_progress.pdf')
-L2R_EVAL = os.path.join(L2R_MODEL_DIR, 'trec_eval.json')
-L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg.json')
+L2R_EVAL = os.path.join(L2R_MODEL_DIR, 'trec_eval_{}.json')
+L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg_{}.json')
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 VOCAB_SIZE = 400000

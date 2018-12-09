@@ -76,7 +76,7 @@ models = {
                                  'ranker': Pointwise,
                                  'optimizer': Adam,
                                  'embedding_dim': 50,
-                                 'epochs': 200,
+                                 'epochs': 20,
                                  'trainable': True,
                                  'scorer_kwargs': {
                                      'in_features': 50 * 2
