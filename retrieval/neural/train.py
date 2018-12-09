@@ -69,7 +69,7 @@ def run(config: Config) -> None:
 
         # only once every 10 epochs for speed.
         model.epochs_trained += 1
-        if model.epochs_trained % 1 == 0:
+        if model.epochs_trained % 10 == 0:
             # evaluate and save statistics
 
             train_stats = _evaluate_epoch(model, ct.TRAIN_TREC_REFERENCE, train_loader,

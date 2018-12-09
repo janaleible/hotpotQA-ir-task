@@ -60,7 +60,7 @@ models = {
                                   'ranker': Pointwise,
                                   'optimizer': Adam,
                                   'embedding_dim': 50,
-                                  'epochs': 100,
+                                  'epochs': 1000,
                                   'trainable': True,
                                   'scorer_kwargs': {
                                       'in_features': 50
@@ -76,7 +76,7 @@ models = {
                                  'ranker': Pointwise,
                                  'optimizer': Adam,
                                  'embedding_dim': 50,
-                                 'epochs': 200,
+                                 'epochs': 1000,
                                  'trainable': True,
                                  'scorer_kwargs': {
                                      'in_features': 50 * 2
@@ -92,7 +92,7 @@ models = {
                                    'ranker': Pointwise,
                                    'optimizer': Adam,
                                    'embedding_dim': 50,
-                                   'epochs': 200,
+                                   'epochs': 1000,
                                    'trainable': True,
                                    'scorer_kwargs': {
                                        'in_features': 50
@@ -107,7 +107,7 @@ models = {
                                   'ranker': Pointwise,
                                   'optimizer': Adam,
                                   'embedding_dim': 50,
-                                  'epochs': 200,
+                                  'epochs': 1000,
                                   'trainable': True,
                                   'scorer_kwargs': {
                                       'in_features': 50 * 2
@@ -122,7 +122,7 @@ models = {
                             'ranker': Pointwise,
                             'optimizer': Adam,
                             'embedding_dim': 50,
-                            'epochs': 100,
+                            'epochs': 1000,
                             'trainable': True,
                             'scorer_kwargs': {
                                 'in_features': 50 * 2
