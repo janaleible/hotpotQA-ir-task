@@ -67,7 +67,7 @@ L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg.json')
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 VOCAB_SIZE = 400000
-BATCH_SIZE = 100
+BATCH_SIZE = 256
 
 # candidate constants
 NO_CANDIDATES = 1000
