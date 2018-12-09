@@ -89,9 +89,9 @@ def run(config: Config) -> None:
 def _load_datasets():
     train_dataset = QueryDocumentsDataset(ct.TRAIN_UNIGRAM_TFIDF_CANDIDATES)
     dev_dataset = QueryDocumentsDataset(ct.DEV_UNIGRAM_TFIDF_CANDIDATES)
-    train_loader = DataLoader(train_dataset, ct.BATCH_SIZE, True, pin_memory=True
+    train_loader = DataLoader(train_dataset, ct.BATCH_SIZE, True, pin_memory=True,
                               collate_fn=QueryDocumentsDataset.collate, num_workers=8)
-    dev_loader = DataLoader(dev_dataset, ct.BATCH_SIZE, True, pin_memory=True
+    dev_loader = DataLoader(dev_dataset, ct.BATCH_SIZE, True, pin_memory=True,
                             collate_fn=QueryDocumentsDataset.collate, num_workers=8)
 
     return train_loader, dev_loader
