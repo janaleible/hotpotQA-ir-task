@@ -70,7 +70,7 @@ VOCAB_SIZE = 400000
 BATCH_SIZE = 256
 
 # candidate constants
-NO_CANDIDATES = 1000
+NO_CANDIDATES = 4
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
 TRAIN_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
 DEV_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')

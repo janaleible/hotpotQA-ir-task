@@ -29,6 +29,7 @@ class Pointwise(Ranker):
     def __init__(self, query_encoder: Encoder, document_encoder: Encoder, scorer: Scorer):
         super().__init__(query_encoder, document_encoder, scorer)
         self.weight = const.NO_CANDIDATES / 2  # ratio of relevant to irrelevant documents.
+        self.weight = 1.0
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.weight])).to(device=const.DEVICE)
 
     def forward(self, query: torch.tensor, document: torch.tensor) -> torch.tensor:

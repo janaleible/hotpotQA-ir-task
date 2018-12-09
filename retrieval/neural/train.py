@@ -53,6 +53,13 @@ def run(config: Config) -> None:
 
     best_acc = _load_checkpoint(model, optimizer, config)
     remaining_epochs = config.epochs - model.epochs_trained
+
+    train_stats = _evaluate_epoch(model, ct.TRAIN_TREC_REFERENCE, train_loader,
+                                  trec_eval_train, trec_eval_agg_train, False)
+    dev_stats = _evaluate_epoch(model, ct.DEV_TREC_REFERENCE, dev_loader,
+                                trec_eval_dev, trec_eval_agg_dev, False)
+    _save_epoch_stats(config.name, model.epochs_trained, -1, train_stats, dev_stats)
+
     for epoch in range(remaining_epochs):
         is_best = False
         last_epoch = (model.epochs_trained + 1) == config.epochs
@@ -151,9 +158,9 @@ def _save_epoch_stats(name: str, epoch: int, train_loss: float,
         writer.writerow([epoch, train_loss, *train_stats, *dev_stats])
     helpers.log(f'[Epoch {epoch:03d}]\t[Train Acc:\t{train_stats[0]:0.4f}]'
                 f'[Train MAP@10:\t{train_stats[1]:0.4f}][Train NDCG@10:\t{train_stats[2]:0.4f}]'
-                f'[Train Recall@10:\t{train_stats[3]:0.4f}]'
-                f'[Train MAP@100:\t{train_stats[4]:0.4f}][Train NDCG@100:\t{train_stats[5]:0.4f}]'
-                f'[Train Recall@100:\t{train_stats[6]:0.4f}]'
+                # f'[Train Recall@10:\t{train_stats[3]:0.4f}]'
+                # f'[Train MAP@100:\t{train_stats[4]:0.4f}][Train NDCG@100:\t{train_stats[5]:0.4f}]'
+                # f'[Train Recall@100:\t{train_stats[6]:0.4f}]'
                 f'[Train Loss:\t{train_loss:0.4f}]'
                 )
     helpers.log(f'[Epoch {epoch:03d}]\t[Dev Acc:\t{dev_stats[0]:0.4f}]'
