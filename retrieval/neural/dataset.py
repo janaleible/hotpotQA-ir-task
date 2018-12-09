@@ -17,7 +17,7 @@ class QueryDocumentsDataset(data.Dataset):
 
     def __init__(self, path: str):
         start = datetime.now()
-        self.data = pd.read_pickle(path, compression='gzip')[:2000]
+        self.data = pd.read_pickle(path, compression='gzip')
         helpers.log(f'Initialized {path.split(".")[-3]} dataset in {datetime.now() - start}')
 
     def __getitem__(self, item: int) -> Tuple[List[int], List[int], int, str, int]:
