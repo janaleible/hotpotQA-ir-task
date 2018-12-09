@@ -89,9 +89,9 @@ def run(config: Config) -> None:
 def _load_datasets():
     train_dataset = QueryDocumentsDataset(ct.TRAIN_UNIGRAM_TFIDF_CANDIDATES)
     dev_dataset = QueryDocumentsDataset(ct.DEV_UNIGRAM_TFIDF_CANDIDATES)
-    train_loader = DataLoader(train_dataset, ct.BATCH_SIZE, True,
+    train_loader = DataLoader(train_dataset, ct.BATCH_SIZE, True, pin_memory=True
                               collate_fn=QueryDocumentsDataset.collate, num_workers=8)
-    dev_loader = DataLoader(dev_dataset, ct.BATCH_SIZE, True,
+    dev_loader = DataLoader(dev_dataset, ct.BATCH_SIZE, True, pin_memory=True
                             collate_fn=QueryDocumentsDataset.collate, num_workers=8)
 
     return train_loader, dev_loader
@@ -103,9 +103,9 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
     for idx, batch in enumerate(data_loader):
         (questions, documents, targets, _, _) = batch
         batch_size = len(questions)
-        questions = questions.to(device=ct.DEVICE)
-        documents = documents.to(device=ct.DEVICE)
-        targets = targets.to(device=ct.DEVICE)
+        questions = questions.to(device=ct.DEVICE, non_blocking=True)
+        documents = documents.to(device=ct.DEVICE, non_blocking=True)
+        targets = targets.to(device=ct.DEVICE, non_blocking=True)
 
         scores = model(questions, documents)
         loss = model.criterion(scores, targets)
@@ -131,9 +131,9 @@ def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_ev
     with torch.no_grad():
         for idx, batch in enumerate(data_loader):
             (questions, documents, targets, question_ids, document_ids) = batch
-            questions = questions.to(device=ct.DEVICE)
-            documents = documents.to(device=ct.DEVICE)
-            targets = targets.to(device=ct.DEVICE)
+            questions = questions.to(device=ct.DEVICE, non_blocking=True)
+            documents = documents.to(device=ct.DEVICE, non_blocking=True)
+            targets = targets.to(device=ct.DEVICE, non_blocking=True)
 
             scores = model(questions, documents)
 
