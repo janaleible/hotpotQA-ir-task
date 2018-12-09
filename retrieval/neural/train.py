@@ -34,6 +34,8 @@ def run(config: Config) -> None:
     with open(const.WID2TITLE, 'rb') as file:
         global WID2TITLE
         WID2TITLE = pickle.load(file)
+    trec_eval = const.L2R_EVAL.format(config.name)
+    trec_eval_agg = const.L2R_EVAL_AGG.format(config.name)
     query_encoder = config.query_encoder(config.embedding_dim)
     document_encoder = config.document_encoder(config.embedding_dim)
     scorer = config.scorer(**config.scorer_kwargs)
@@ -57,8 +59,8 @@ def run(config: Config) -> None:
         model.epochs_trained += 1
         if model.epochs_trained % 10 == 0:
             # evaluate and save statistics
-            train_stats = _evaluate_epoch(model, train_loader, last_epoch)
-            dev_stats = _evaluate_epoch(model, dev_loader, last_epoch)
+            train_stats = _evaluate_epoch(model, train_loader, trec_eval, trec_eval_agg, last_epoch)
+            dev_stats = _evaluate_epoch(model, dev_loader, trec_eval, trec_eval_agg, last_epoch)
             _save_epoch_stats(config.name, model.epochs_trained, train_loss, train_stats, dev_stats)
             # save model
             if dev_stats[0] >= best_acc:
@@ -102,7 +104,8 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
     return epoch_loss / len(data_loader.dataset)
 
 
-def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool) -> METRICS:
+def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool, trec_eval: str,
+                    trec_eval_agg: str) -> METRICS:
     model.eval()
     epoch_run = Run()
     epoch_eval = Evaluator(const.TRAIN_TREC_REFERENCE, measures=pytrec_eval.supported_measures)
@@ -119,10 +122,10 @@ def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool) -> ME
                 title = WID2TITLE[INT2WID[document_id]]
                 epoch_run.update_ranking(question_id, title, scores[i].item())
             acc += torch.mean((torch.round(scores) == targets).to(dtype=torch.float))
-        _, trec_eval_agg = epoch_eval.evaluate(epoch_run, save=save)
+        _, trec_eval_agg = epoch_eval.evaluate(epoch_run, trec_eval, trec_eval_agg, save)
         return acc.item(), \
-            trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
-            trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100']
+               trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
+               trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100']
 
 
 def _save_epoch_stats(name: str, epoch: int, train_loss: float,
