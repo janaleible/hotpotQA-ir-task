@@ -62,13 +62,15 @@ L2R_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint.pt')
 L2R_BEST_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint_best.pt')
 L2R_TRAIN_PROGRESS = os.path.join(L2R_MODEL_DIR, 'learning_progress.csv')
 L2R_LEARNING_PROGRESS_PLOT = os.path.join(L2R_MODEL_DIR, 'learning_progress.pdf')
+L2R_EVAL = os.path.join(L2R_MODEL_DIR, 'trec_eval_{}.json')
+L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg_{}.json')
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 VOCAB_SIZE = 400000
-BATCH_SIZE = 100
+BATCH_SIZE = 256
 
 # candidate constants
-NO_CANDIDATES = 1000
+NO_CANDIDATES = 4
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
 TRAIN_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
 DEV_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')

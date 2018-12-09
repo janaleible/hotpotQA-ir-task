@@ -45,7 +45,7 @@ class LinearLogisticRegression(Scorer):
 
     def forward(self, document_encodings: torch.float, query_encodings: torch.float) -> torch.float:
         batch_size = document_encodings.shape[0]
-        energies = self.linear(torch.cat([document_encodings, query_encodings], dim=2)).view(batch_size, 1)
+        energies = self.linear(torch.cat([document_encodings, query_encodings], dim=1)).view(batch_size, 1)
         if self.training:
             return energies
         else:
