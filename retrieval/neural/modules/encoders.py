@@ -46,7 +46,8 @@ class MaxPoolEncoder(Encoder):
         super().__init__(embedding_dim)
 
     def encode(self, document_embeddings: torch.float) -> torch.float:
-        return torch.unsqueeze(torch.max(document_embeddings, dim=1)[0], dim=1)
+        batch_size, _, _ = document_embeddings.shape
+        return torch.max(document_embeddings, dim=1)[0].view(batch_size, self.embedding_dim)
 
 
 class MeanPoolEncoder(Encoder):
@@ -55,23 +56,22 @@ class MeanPoolEncoder(Encoder):
         super().__init__(embedding_dim)
 
     def encode(self, document_embeddings: torch.float) -> torch.float:
-        return torch.unsqueeze(torch.mean(document_embeddings, dim=1), dim=1)
+        batch_size, _, _ = document_embeddings.shape
+        return torch.mean(document_embeddings, dim=1).view(batch_size, self.embedding_dim)
 
 
 class GRUEncoder(Encoder):
-    encoding_dim: int
 
-    def __init__(self, encoding_dim: int):
-        super().__init__(encoding_dim)
+    def __init__(self, embedding_dim: int):
+        super().__init__(embedding_dim)
 
-        self.encoding_dim = encoding_dim
         self.document_encoder = nn.GRU(
-            input_size=encoding_dim,
-            hidden_size=encoding_dim,
+            input_size=embedding_dim,
+            hidden_size=embedding_dim,
             batch_first=True
         )
 
     def encode(self, document_embeddings):
         (batch_size, _, _) = document_embeddings.shape
         (document_encoding, document_hn) = self.document_encoder(document_embeddings)
-        return document_hn.view(batch_size, self.encoding_dim)
+        return document_hn.view(batch_size, self.embedding_dim)
