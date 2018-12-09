@@ -86,9 +86,6 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
     for idx, batch in enumerate(data_loader):
         (questions, documents, targets, _, _) = batch
         batch_size = len(questions)
-        questions = questions.to(const.DEVICE)
-        documents = documents.to(const.DEVICE)
-        targets = targets.to(const.DEVICE)
 
         scores = model(questions, documents)
         loss = model.criterion(scores, targets)
@@ -113,9 +110,6 @@ def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool) -> ME
     with torch.no_grad():
         for idx, batch in enumerate(data_loader):
             (questions, documents, targets, question_ids, document_ids) = batch
-            questions = questions.to(const.DEVICE)
-            documents = documents.to(const.DEVICE)
-            targets = targets.to(const.DEVICE)
 
             scores = model(questions, documents)
 

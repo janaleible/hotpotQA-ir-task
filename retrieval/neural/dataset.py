@@ -34,7 +34,7 @@ class QueryDocumentsDataset(data.Dataset):
         return list(map(lambda _id: _id if _id < const.VOCAB_SIZE else 0, _ids))
 
     @staticmethod
-    def collate(batch: Tuple[Any]) -> Tuple[torch.tensor, torch.tensor, torch.tensor, List[str], List[int] ]:
+    def collate(batch: Tuple[Any]) -> Tuple[torch.tensor, torch.tensor, torch.tensor, List[str], List[int]]:
         queries, documents, targets, question_ids, document_ids = list(zip(*batch))
         max_query_length = max(map(lambda query: len(query), queries))
         max_document_length = max(map(lambda doc: len(doc), documents))
@@ -45,9 +45,9 @@ class QueryDocumentsDataset(data.Dataset):
             queries[i] += [0] * (max_query_length - len(queries[i]))
             documents[i] += [0] * (max_document_length - len(documents[i]))
 
-        queries = torch.tensor(queries)
-        documents = torch.tensor(documents)
-        targets = torch.tensor(targets, dtype=torch.float).unsqueeze(dim=1)
+        queries = torch.tensor(queries, device=const.DEVICE)
+        documents = torch.tensor(documents, device=const.DEVICE)
+        targets = torch.tensor(targets, device=const.DEVICE, dtype=torch.float).unsqueeze(dim=1)
         return queries, documents, targets, question_ids, document_ids
 
     def __len__(self):
