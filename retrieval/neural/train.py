@@ -53,17 +53,18 @@ def run(config: Config) -> None:
         # train
         train_loss = _train_epoch(model, optimizer, train_loader, config)
 
-        # evaluate and save statistics
-        train_stats = _evaluate_epoch(model, train_loader, last_epoch)
-        dev_stats = _evaluate_epoch(model, dev_loader, last_epoch)
-        _save_epoch_stats(config.name, model.epochs_trained, train_loss, train_stats, dev_stats)
-
-        # save model
+        # only once every 10 epochs for speed.
         model.epochs_trained += 1
-        if dev_stats[0] >= best_acc:
-            best_acc = dev_stats[0]
-            is_best = True
-        _save_checkpoint(config.name, model, optimizer, best_acc, is_best)
+        if model.epochs_trained % 10 == 0:
+            # evaluate and save statistics
+            train_stats = _evaluate_epoch(model, train_loader, last_epoch)
+            dev_stats = _evaluate_epoch(model, dev_loader, last_epoch)
+            _save_epoch_stats(config.name, model.epochs_trained, train_loss, train_stats, dev_stats)
+            # save model
+            if dev_stats[0] >= best_acc:
+                best_acc = dev_stats[0]
+                is_best = True
+            _save_checkpoint(config.name, model, optimizer, best_acc, is_best)
 
     return
 
