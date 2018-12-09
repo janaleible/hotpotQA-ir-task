@@ -28,6 +28,7 @@ WID2TITLE: Dict[int, str]
 
 def run(config: Config) -> None:
     start = datetime.now()
+    os.makedirs(const.L2R_MODEL_DIR.format(config.name), exist_ok=True)
     with open(const.INT2WID, 'rb') as file:
         global INT2WID
         INT2WID = pickle.load(file)
@@ -107,8 +108,8 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
     return epoch_loss / len(data_loader.dataset)
 
 
-def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool, trec_eval: str,
-                    trec_eval_agg: str) -> METRICS:
+def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, trec_eval: str,
+                    trec_eval_agg: str, save: bool) -> METRICS:
     model.eval()
     epoch_run = Run()
     epoch_eval = Evaluator(const.TRAIN_TREC_REFERENCE, measures=pytrec_eval.supported_measures)
@@ -136,7 +137,6 @@ def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool, trec_
 
 def _save_epoch_stats(name: str, epoch: int, train_loss: float,
                       train_stats: Tuple[float, ...], dev_stats: Tuple[float, ...]):
-    os.makedirs(const.L2R_MODEL_DIR.format(name), exist_ok=True)
     with open(const.L2R_TRAIN_PROGRESS.format(name), 'a') as f:
         writer = csv.writer(f)
         writer.writerow([epoch, train_loss, *train_stats, *dev_stats])
