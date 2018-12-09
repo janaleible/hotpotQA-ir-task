@@ -86,8 +86,8 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
         (queries, documents, targets, _, _) = batch
         batch_size = len(queries)
 
-        scores = model(queries, documents)
-        loss = model.criterion(scores, targets)
+        scores = model(queries.to(const.DEVICE), documents.to(const.DEVICE))
+        loss = model.criterion(scores, targets.to(const.DEVICE))
 
         if config.trainable:
             loss.backward()
