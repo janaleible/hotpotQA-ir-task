@@ -112,7 +112,7 @@ models = {
                                   'scorer_kwargs': {
                                       'in_features': 50 * 2
                                   }}),
-    'gru_llr_pw': Config(**{'name': 'max_pool_llr_pw',
+    'gru_llr_pw': Config(**{'name': 'gru_llr_pw',
                             'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
                             'train_question_set': const.TRAIN_HOTPOT_SET,
                             'dev_question_set': const.DEV_HOTPOT_SET,
