@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Tuple, Dict
 import numpy
 import pytrec_eval
-from tqdm import tqdm
 
 from services.evaluation import Evaluator, Run
 from retrieval.neural.configs import Config
@@ -18,7 +17,7 @@ from torch import nn, optim
 import torch
 from services import helpers
 
-METRICS = Tuple[float, float, float, float, float ,float, float]
+METRICS = Tuple[float, float, float, float, float, float, float]
 random.seed(42)
 torch.random.manual_seed(42)
 numpy.random.seed(42)
@@ -86,6 +85,9 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
     for idx, batch in enumerate(data_loader):
         (queries, documents, targets, _, _) = batch
         batch_size = len(queries)
+        queries = queries.to(const.DEVICE)
+        documents = documents.to(const.DEVICE)
+        targets = targets.to(const.DEVICE)
 
         scores = model(queries, documents)
         loss = model.criterion(scores, targets)
@@ -121,8 +123,8 @@ def _evaluate_epoch(model: nn.Module, data_loader: DataLoader, save: bool) -> ME
             acc += torch.mean((torch.round(scores) == targets).to(dtype=torch.float))
         _, trec_eval_agg = epoch_eval.evaluate(epoch_run, save=save)
         return acc.item(), \
-            trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
-            trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100']
+               trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
+               trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100']
 
 
 def _save_epoch_stats(name: str, epoch: int, train_loss: float,
