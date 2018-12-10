@@ -3,7 +3,7 @@ import os
 import nltk
 from nltk import AlignedSent
 from tqdm import tqdm
-import dill as pickle
+import dill as pickle # use dill rather than pickle for defaultdicts
 
 from retrieval.feature_extractors.FeatureExtractor import FeatureExtractor
 from retrieval.term.dataset import Dataset
@@ -15,9 +15,12 @@ import main_constants as constants
 class IBM1FeatureExtractor(FeatureExtractor):
 
     ibm1: nltk.IBMModel1
+    normalized: bool
 
-    def __init__(self, index: Index, feature_name: str):
+    def __init__(self, index: Index, feature_name: str, normalized: bool):
         super().__init__(index, feature_name)
+
+        self.normalized = normalized
 
         if os.path.isfile(constants.IBM_MODEL):
             with open(constants.IBM_MODEL, 'rb') as file:
@@ -57,11 +60,14 @@ class IBM1FeatureExtractor(FeatureExtractor):
         for alignment in aligned_sentence.alignment:
             probability *= self.ibm1.translation_table[aligned_sentence.words[alignment[0]]][aligned_sentence.mots[alignment[1]]]
 
+        if self.normalized:
+            probability /= len(tokenized_question)
+
         return probability
 
 if __name__ == '__main__':
 
-    FE = IBM1FeatureExtractor(None, '')
+    FE = IBM1FeatureExtractor(None, '', False)
 
     feature = FE.extract(
         'Were Scott Derrickson and Ed Wood of the same nationality?',

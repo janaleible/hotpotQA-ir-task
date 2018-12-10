@@ -7,12 +7,15 @@ from services.index import Index, Tokenizer
 
 class BigramOverlapFeatureExtractor(FeatureExtractor):
 
-    def __init__(self, index: Index, feature_name: str):
+    normalized: bool
+
+    def __init__(self, index: Index, feature_name: str, normalized: bool):
         super().__init__(index, feature_name)
 
+        self.normalized = normalized
         self.tokenizer = Tokenizer()
 
-    def extract(self, question: str, doc: str) -> int:
+    def extract(self, question: str, doc: str) -> float:
 
         tokenized_question = self.tokenizer.tokenize(question)
         tokenized_doc = self.tokenizer.tokenize(doc)
@@ -22,24 +25,17 @@ class BigramOverlapFeatureExtractor(FeatureExtractor):
 
         overlap = sum(question_bigrams.intersection(doc_bigrams).values())
 
+        if self.normalized:
+            overlap /= len(tokenized_question)
+
         return overlap
-
-
-class NormalizedBigramOverlapFeatureExtractor(BigramOverlapFeatureExtractor):
-
-    def extract(self, question: str, doc: str) -> float:
-
-        tokenized_question = self.tokenizer.tokenize(question)
-        raw_overlap = super().extract(question, doc)
-
-        return raw_overlap / len(tokenized_question)
 
 
 if __name__ == '__main__':
 
     # index = Index()
 
-    FE = NormalizedBigramOverlapFeatureExtractor(None, '')
+    FE = BigramOverlapFeatureExtractor(None, '', False)
 
     feature = FE.extract(
         'Were Scott Derrickson and Ed Wood of the same nationality?',
