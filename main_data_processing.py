@@ -4,7 +4,7 @@ import argparse
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--action', type=str, required=True,
-                        choices=['trec', 'titles', 'ids', 'embeddings',  'reference', 'candidates','all'],
+                        choices=['trec', 'titles', 'ids', 'embeddings', 'reference', 'candidates', 'all'],
                         help='Data processing action. trec=build TREC corpus from first paragraph of each document.')
     parser.add_argument('-u', '--use_less_memory', type=bool, default=True,
                         help='Use less memory. Useful for building TREC corpus.')
@@ -23,4 +23,5 @@ if __name__ == '__main__':
     if args.action in ['reference', 'all']:
         reference.build()
     if args.action in ['candidates', 'all']:
-        candidates.build()
+        extractors = []  # TODO: Add extractors once implemented.
+        candidates.build(extractors)

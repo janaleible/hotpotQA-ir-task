@@ -13,8 +13,12 @@ CHUNK_SIZE = 1000
 EOP = " 0eop0 "
 EOS = " 0eos0 "
 
+RELEVANT_DOCUMENTS = 2
+
+# Data constants
 RAW_DATA_DIR = os.path.join(BASE_DIR, 'data', 'raw')
 TREC_CORPUS_DIR = os.path.join(BASE_DIR, 'data', 'trec')
+DOCUMENT_DB = os.path.join(BASE_DIR, 'data', 'documents.sqlite')
 
 # Index constants
 INDEX_DIR = os.path.join(BASE_DIR, 'data', 'index')
@@ -36,7 +40,6 @@ INDRI_INDEX_DIR = os.path.join(BASE_DIR, 'data', 'index', 'indri')
 HOTPOT_DIR = os.path.join(BASE_DIR, 'data', 'hotpot')
 TRAIN_HOTPOT_SET = os.path.join(HOTPOT_DIR, f'train_{SETTING}.json')
 DEV_HOTPOT_SET = os.path.join(HOTPOT_DIR, f'dev_{SETTING}.json')
-
 
 # term-based retrieval constants
 TERM_RETRIEVALS_DIR = os.path.join(BASE_DIR, 'data', 'term_retrievals')
@@ -70,10 +73,12 @@ VOCAB_SIZE = 400000
 BATCH_SIZE = 256
 
 # candidate constants
-NO_CANDIDATES = 4
+TRAIN_NO_CANDIDATES = 4
+DEV_NO_CANDIDATES = 1000
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
 TRAIN_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
 DEV_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')
+BASE_COLUMN_NAMES = ['question_id', 'type', 'level', 'document_id', 'question', 'document', 'target']
 
 # reference constants
 TRAIN_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'train_{SETTING}_reference.json')

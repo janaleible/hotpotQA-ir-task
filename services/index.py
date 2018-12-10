@@ -161,14 +161,13 @@ class Index(object):
         """Translate non-ascii characters to ascii and remove any punctuation."""
         return self.tokenizer.normalize(s)
 
-    def inspect_document(self, doc: Tuple[str, Tuple[int]], include_stop: bool, format_paragraph: bool) -> str:
+    def doc_str(self, doc_tokens: Tuple[int], include_stop: bool, format_paragraph: bool) -> str:
         """Reproduce the stemmed document stored by indri as a string.
 
-        :param doc: The document as retrieved from index.document(id)
+        :param doc_tokens: The document tokens
         :param include_stop: Whether to include stop words.
         :param format_paragraph: Whether to format according to original paragraph delimitation.
         """
-        doc_id, doc_tokens = doc
 
         if include_stop:
             doc_str = " ".join([self.id2token.get(tid, '<STOP>') for tid in doc_tokens])
@@ -191,7 +190,7 @@ class Index(object):
         internal_id = self.external2internal(external_id)
         document = self.index.document(internal_id)
 
-        return self.inspect_document(document, include_stop=True, format_paragraph=False)
+        return self.doc_str(document[1], include_stop=True, format_paragraph=False)
 
     def get_document_by_int_id(self, doc_int_id: int) -> Tuple[int, ...]:
         return self.index.document(doc_int_id)[1]

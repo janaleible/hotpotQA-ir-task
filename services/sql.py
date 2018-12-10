@@ -40,6 +40,7 @@ def get_reference(table: str = 'retrievals') -> str:
     SELECT q_id, target_titles FROM {table} 
     """
 
+
 def get_retrievals(table: str = 'retrievals') -> str:
     return f"""
     SELECT q_id, result_int_ids FROM {table}

@@ -1,12 +1,13 @@
 """This module builds the TREC corpus that will be passed to the Indri index. Read on for important details."""
 from unidecode import unidecode
 
-from main_constants import EOP, EOS, RAW_DATA_DIR, TREC_CORPUS_DIR
+from main_constants import EOP, EOS, RAW_DATA_DIR, TREC_CORPUS_DIR, DOCUMENT_DB
 from typing import Dict, Any, Tuple, List
 from datetime import datetime
-from services import parallel
+from services import parallel, helpers
 from lxml import etree
 from glob import glob
+import sqlite3
 import logging
 import json
 import bz2
@@ -40,7 +41,16 @@ def build(use_less_memory: bool):
     folder_paths = sorted(glob(os.path.join(RAW_DATA_DIR, '*')))
     doc_triples = []
 
-    logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tExtracting TREC documents.')
+    # create document database
+    helpers.log('Creating documents database.')
+    db = sqlite3.connect(DOCUMENT_DB)
+    cursor: sqlite3.Cursor = db.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS documents (id INTEGER, text TEXT)")
+    db.commit()
+    cursor.close()
+    db.close()
+
+    helpers.log('Extracting TREC documents.')
     if USE_LESS_MEMORY:
         for _ in parallel.execute(_process_raw_data_folder, folder_paths):
             pass
@@ -70,9 +80,12 @@ def _process_raw_data_folder(folder_path: str):
     folder from which the files originate. If set to ``False`` the documents will be returned for further processing in
     the main thread.
 
+    Store the document string in a database for later reference.
+
     :param folder_path: The path to the folder where the compressed JSON collection of raw wiki data lies.
     :return: A sorted collection of (document_id, document_title, trec_document_string)
     """
+    doc_pairs: List[Tuple[int, str]] = []
     doc_triples = []
     file_paths = sorted(glob(os.path.join(folder_path, '*.bz2')))
     for file_path in file_paths:
@@ -80,12 +93,23 @@ def _process_raw_data_folder(folder_path: str):
             for line in file:
                 doc = json.loads(line.decode('utf-8'))
                 doc_id, doc_title, doc_str = _extract_doc(doc)
-
+                doc_pairs.append((doc_id, doc_str))
                 doc_triples.append((doc_id, doc_title, _build_trec(doc_id, doc_title, doc_str)))
     doc_triples = sorted(doc_triples, key=lambda triple: triple[0])
 
     folder = folder_path.split("/")[-1]
-    logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tExtracted documents from folder {folder}.')
+    helpers.log(f'Extracted documents from folder {folder}.')
+
+    db = sqlite3.connect(DOCUMENT_DB)
+    cursor = db.cursor()
+    cursor.executemany("INSERT INTO documents (id, text) VALUES (?, ?)", doc_pairs)
+    db.commit()
+    cursor.close()
+    db.close()
+
+    helpers.log(f'Persisted documents to database.')
+
+
 
     if USE_LESS_MEMORY:
         file_name = os.path.join(TREC_CORPUS_DIR, f'{folder}.trectext')
