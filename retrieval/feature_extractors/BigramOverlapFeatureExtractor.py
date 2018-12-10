@@ -24,11 +24,22 @@ class BigramOverlapFeatureExtractor(FeatureExtractor):
 
         return overlap
 
+
+class NormalizedBigramOverlapFeatureExtractor(BigramOverlapFeatureExtractor):
+
+    def extract(self, question: str, doc: str) -> float:
+
+        tokenized_question = self.tokenizer.tokenize(question)
+        raw_overlap = super().extract(question, doc)
+
+        return raw_overlap / len(tokenized_question)
+
+
 if __name__ == '__main__':
 
     # index = Index()
 
-    FE = BigramOverlapFeatureExtractor(None, '')
+    FE = NormalizedBigramOverlapFeatureExtractor(None, '')
 
     feature = FE.extract(
         'Were Scott Derrickson and Ed Wood of the same nationality?',
