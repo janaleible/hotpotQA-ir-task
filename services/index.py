@@ -89,11 +89,10 @@ class Index(object):
         self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
         self.id2tf = self.index.get_term_frequencies()
 
-        # Monte Carlo Estimation for document length:
-        sample = np.random.choice(np.arange(self.index.document_base(), self.index.maximum_document()), 1000000, False)
-        doc_lengths = np.empty(1000000, dtype=np.float)
-        for (idx, length) in enumerate(sample):
-            doc_lengths[idx] = length
+        # average document length computation
+        doc_lengths = np.zeros(self.index.document_count(), dtype=np.float)
+        for (idx, doc_iid) in enumerate(range(self.index.document_base(), self.index.maximum_document())):
+            doc_lengths[idx] = self.index.document_length(doc_iid)
         self.avg_doc_len = float(doc_lengths.mean())
 
         self.tokenizer = Tokenizer()
