@@ -1,11 +1,15 @@
 """This module builds the TREC corpus that will be passed to the Indri index. Read on for important details."""
+import pandas as pd
 
-from main_constants import EOP, EOS, RAW_DATA_DIR, TREC_CORPUS_DIR
+from unidecode import unidecode
+
+from main_constants import EOP, EOS, RAW_DATA_DIR, TREC_CORPUS_DIR, DOCUMENT_DB
 from typing import Dict, Any, Tuple, List
 from datetime import datetime
-from services import parallel
+from services import parallel, helpers
 from lxml import etree
 from glob import glob
+import sqlite3
 import logging
 import json
 import bz2
@@ -39,10 +43,16 @@ def build(use_less_memory: bool):
     folder_paths = sorted(glob(os.path.join(RAW_DATA_DIR, '*')))
     doc_triples = []
 
-    logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tExtracting TREC documents.')
+    # create document database
+    helpers.log('Creating documents database.')
+    dfs = []
+
+    helpers.log('Extracting TREC documents.')
     if USE_LESS_MEMORY:
-        for _ in parallel.execute(_process_raw_data_folder, folder_paths):
-            pass
+        for _, df in parallel.execute(_process_raw_data_folder, folder_paths):
+            dfs.append(df)
+        df: pd.DataFrame = pd.concat(dfs, ignore_index=True)
+        df.to_pickle(DOCUMENT_DB, compression='gzip')
         logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tExtraction done.')
     else:
         for doc_triples_by_folder in parallel.execute(_process_raw_data_folder, folder_paths):
@@ -69,9 +79,15 @@ def _process_raw_data_folder(folder_path: str):
     folder from which the files originate. If set to ``False`` the documents will be returned for further processing in
     the main thread.
 
+    Store the document string in a database for later reference.
+
     :param folder_path: The path to the folder where the compressed JSON collection of raw wiki data lies.
     :return: A sorted collection of (document_id, document_title, trec_document_string)
     """
+    doc_pairs: Dict[str, List[Any]] = {
+        'id': [],
+        'text': []
+    }
     doc_triples = []
     file_paths = sorted(glob(os.path.join(folder_path, '*.bz2')))
     for file_path in file_paths:
@@ -79,18 +95,18 @@ def _process_raw_data_folder(folder_path: str):
             for line in file:
                 doc = json.loads(line.decode('utf-8'))
                 doc_id, doc_title, doc_str = _extract_doc(doc)
-
-                doc_triples.append((doc_id, doc_title, _build_trec(doc_id, doc_title, doc_str)))
-    doc_triples = sorted(doc_triples, key=lambda triple: triple[0])
+                doc_pairs['id'].append(doc_id)
+                doc_pairs['text'].append(doc_str)
+                # doc_triples.append((doc_id, doc_title, _build_trec(doc_id, doc_title, doc_str)))
 
     folder = folder_path.split("/")[-1]
-    logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tExtracted documents from folder {folder}.')
+    helpers.log(f'Extracted documents from folder {folder}.')
 
-    if USE_LESS_MEMORY:
-        file_name = os.path.join(TREC_CORPUS_DIR, f'{folder}.trectext')
-        _process_doc_triples(doc_triples, file_name)
-    else:
-        return doc_triples
+    df = pd.DataFrame(doc_pairs)
+
+    helpers.log(f'Persisted documents to DataFrame.')
+
+    return doc_triples, df
 
 
 def _process_doc_triples(doc_triples: List[Tuple[int, str, str]], file_name: str = None):
@@ -136,6 +152,7 @@ def _extract_doc(doc: Dict[str, Any]):
         paragraph_index += 1
 
     doc_string = f"{EOP}".join([f"{EOS}".join(sentences) for sentences in paragraphs])
+    doc_string = unidecode(doc_string)
 
     return int(doc['id']), doc['title'], doc_string
 

@@ -20,6 +20,16 @@ def build():
         int2wid.update(batch_int2wid)
         wid2int.update(batch_wid2int)
 
+    with open(TOKEN2ID, 'wb')as file:
+        pickle.dump(INDEX.token2id, file)
+    with open(ID2TOKEN, 'wb')as file:
+        pickle.dump(INDEX.id2token, file)
+    with open(ID2DF, 'wb')as file:
+        pickle.dump(INDEX.id2df, file)
+    with open(ID2TF, 'wb')as file:
+        pickle.dump(INDEX.id2tf, file)
+    with open(ID2TOKEN, 'wb')as file:
+        pickle.dump(INDEX.id2token, file)
     with open(INT2WID, 'wb') as file:
         pickle.dump(int2wid, file)
     with open(WID2INT, 'wb') as file:

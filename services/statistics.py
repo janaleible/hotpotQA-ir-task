@@ -1,4 +1,4 @@
-from dataset.dataset import Dataset, Question
+from retrieval.term_based.dataset import Dataset, Question
 from typing import Set, List, Tuple
 from services.index import Index
 from datetime import datetime
@@ -23,7 +23,7 @@ EASY = 2
 def accuracies(database: str, table: str):
     """Compute accuracy over a dataset given a retrieval database.
     Statistics are split over question types and levels."""
-    dataset = Dataset.from_file(TRAINING_SET)
+    dataset = Dataset.from_file(TRAIN_HOTPOT_SET)
     global INDEX
     INDEX = Index()
 
@@ -75,7 +75,7 @@ def _extract_target(question: Question) -> Set[int]:
 
 def _fetch_prediction(table: str, conn: sqlite3.Connection, question: Question) -> List[int]:
     cursor = conn.cursor()
-    cursor.execute(sql.get_retrieval(table), (question.id,))
+    cursor.execute(sql.get_retrieval_by_qid(table), (question.id,))
     prediction = cursor.fetchone()
     cursor.close()
 

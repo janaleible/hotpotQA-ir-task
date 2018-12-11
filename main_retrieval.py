@@ -1,23 +1,29 @@
-from retrieval import filters
+from retrieval import term
+from retrieval import neural
 import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-a', '--action', type=str, required=True, choices=['filter'],
+    parser.add_argument('-g', '--group', type=str, required=True, choices=['term', 'neural'],
                         help='What to do.')
-    parser.add_argument('-m', '--model', type=str, required=True, choices=['overlap', 'uni_tfidf', 'bi_tfidf', 'prf_lm']
+    parser.add_argument('-m', '--model', type=str, required=True,
+                        choices=['overlap', 'uni_tfidf', 'bi_tfidf', 'prf_lm', 'max_pool_bllr_pw', 'max_pool_llr_pw',
+                                 'mean_pool_bllr_pw', 'mean_pool_llr_pw',
+                                 'gru_llr_pw']
                         , help='What retrieval model to use.')
     args, _ = parser.parse_known_args()
-    command = f'{args.action}@{args.model}'
+    command = f'{args.group}@{args.model}'
 
-    if command == 'filter@overlap':
-        filters.overlap.process()
-    elif command == 'filter@uni_tfidf':
-        filters.uni_tfidf.process()
-    elif command == 'filter@bi_tfidf':
-        filters.bi_tfidf.process()
-    elif command == 'filter@prf_lm':
-        filters.prf_lm.process()
+    if args.group == 'neural':
+        neural.train.run(neural.configs.models[args.model])
+    elif command == 'term@overlap':
+        term.variants.overlap.process()
+    elif command == 'term@uni_tfidf':
+        term.variants.uni_tfidf.process()
+    elif command == 'term@bi_tfidf':
+        term.variants.bi_tfidf.process()
+    elif command == 'term@prf_lm':
+        term.variants.prf_lm.process()
     else:
         raise ValueError(f'Unknown command: {command}')
