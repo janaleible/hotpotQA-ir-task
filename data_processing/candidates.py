@@ -110,7 +110,6 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
         if db is None:
             db = sqlite3.connect(candidate_db_path)
             cursor = db.cursor()
-
         cursor.executemany(sql.insert_candidate, rows)
         db.commit()
     cursor.close()
@@ -141,7 +140,7 @@ def _extract_text(row: List[str], question_text: str, doc_wid: int) -> Tuple[str
 
 def _extract_tokens(row: List[str], index: Index, question_text: str, doc_iid: int) -> Tuple[List[int], List[int]]:
     doc_tokens = list(index.get_document_by_int_id(doc_iid))
-    query_tokens = [index.token2id[token] for token in index.tokenize(question_text)]
+    query_tokens = [index.token2id.get(token, 0) for token in index.tokenize(question_text)]
 
     row.extend([json.dumps(query_tokens), json.dumps(doc_tokens)])
 
