@@ -45,7 +45,7 @@ def build():
         helpers.log(f'Creating {split} candidate set with {len(_set)} question.')
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([split] * len(_set), _set))
-        for batch_count in map(_build_candidates, _set_generator):
+        for batch_count in parallel.execute(_build_candidates, _set_generator):
             total_count += batch_count
         helpers.log(f'Created {split} candidate set with {total_count} questions in {datetime.now() - start}')
 
