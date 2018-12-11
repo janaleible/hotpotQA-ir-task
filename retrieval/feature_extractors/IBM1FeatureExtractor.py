@@ -9,7 +9,6 @@ import dill as pickle # use dill rather than pickle for defaultdicts
 from retrieval.feature_extractors.FeatureExtractor import FeatureExtractor
 from retrieval.term.dataset import Dataset
 from services import parallel
-from services.index import Index
 
 import main_constants as constants
 
