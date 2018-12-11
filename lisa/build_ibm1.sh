@@ -7,7 +7,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=24:00:00
 #SBATCH --mem=60000M
-#SBATCH --partition=cpu
+#SBATCH --partition=gpu_shared
+#SBATCH --gres=gpu:1
 
 module load Python/3.6.3-foss-2017b
 
