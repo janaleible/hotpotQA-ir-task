@@ -1,6 +1,7 @@
 import os
 from multiprocessing import get_context
 import itertools
+import main_constants as ct
 from typing import Callable, Iterable
 
 
@@ -19,5 +20,5 @@ def chunk(n, iterable):
 def execute(func: Callable, items: Iterable):
     """Execute a callable over the iterable in parallel."""
 
-    with get_context("spawn").Pool(os.cpu_count()) as pool:
+    with get_context(ct.PROCESS_CONTEXT).Pool(os.cpu_count()) as pool:
         return pool.map(func, items)

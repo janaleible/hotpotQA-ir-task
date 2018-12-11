@@ -1,4 +1,4 @@
-from data_processing import trec, title_maps, id_maps, embeddings, reference, candidates
+from data_processing import trec, title_maps, id_maps, embeddings, reference, features
 import argparse
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -22,4 +22,4 @@ if __name__ == '__main__':
     if args.action in ['reference', 'all']:
         reference.build()
     if args.action in ['candidates', 'all']:
-        candidates.build()
+        features.build()

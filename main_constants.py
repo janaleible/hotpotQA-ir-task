@@ -9,6 +9,8 @@ BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) 
 SETTING = 'dummy'
 # SETTING = 'full'
 
+PROCESS_CONTEXT = 'fork'
+
 # data processing constants
 CHUNK_SIZE = 1000
 EOP = " 0eop0 "
