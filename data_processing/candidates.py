@@ -21,27 +21,27 @@ def build():
     helpers.log('Loaded index.')
 
     os.makedirs(ct.CANDIDATES_DIR, exist_ok=True)
-    db = sqlite3.connect(ct.TRAIN_CANDIDATES_DB)
-    cursor = db.cursor()
-    cursor.execute(sql.create_candidate_table)
-    db.commit()
-    cursor.close()
-    db.close()
-
-    helpers.log('Created candidates table.')
-
     with open(ct.TRAIN_HOTPOT_SET, 'r') as file:
         question_set = json.load(file)
         train_question_set = question_set[:ct.TRAIN_DEV_SPLIT]
         dev_question_set = question_set[ct.TRAIN_DEV_SPLIT:]
 
     iterator: List[Tuple[str, str, Callable]] = [
-        (train_question_set, 'train', ct.TRAIN_CANDIDATES_CHUNK),
-        (dev_question_set, 'dev', ct.DEV_CANDIDATES_CHUNK)
+        (train_question_set, 'train', ct.TRAIN_CANDIDATES_DB, ct.TRAIN_CANDIDATES_CHUNK),
+        (dev_question_set, 'dev', ct.DEV_CANDIDATES_DB, ct.DEV_CANDIDATES_CHUNK)
     ]
 
-    for (_set, split, chunk) in iterator:
+    for (_set, split, candidate_db_path, chunk) in iterator:
         start = datetime.now()
+
+        db = sqlite3.connect(candidate_db_path)
+        cursor = db.cursor()
+        cursor.execute(sql.create_candidate_table)
+        db.commit()
+        cursor.close()
+        db.close()
+        helpers.log('Created candidates table.')
+
         helpers.log(f'Creating {split} candidate set with {len(_set)} question.')
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([split] * len(_set), _set))
