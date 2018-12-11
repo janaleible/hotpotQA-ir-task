@@ -1,6 +1,5 @@
 from data_processing import trec, title_maps, id_maps, embeddings, reference, candidates
 import argparse
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--action', type=str, required=True,
@@ -23,5 +22,4 @@ if __name__ == '__main__':
     if args.action in ['reference', 'all']:
         reference.build()
     if args.action in ['candidates', 'all']:
-        extractors = []  # TODO: Add extractors once implemented.
-        candidates.build(extractors)
+        candidates.build()
