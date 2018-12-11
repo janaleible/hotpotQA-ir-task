@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 import nltk
 from nltk import AlignedSent
@@ -7,9 +8,31 @@ import dill as pickle # use dill rather than pickle for defaultdicts
 
 from retrieval.feature_extractors.FeatureExtractor import FeatureExtractor
 from retrieval.term.dataset import Dataset
+from services import parallel
 from services.index import Index
 
 import main_constants as constants
+
+
+def _build_bitext(datachunk) -> List[AlignedSent]:
+    bitext = []
+
+    chunk_id, data = datachunk
+
+    for question in tqdm(data):
+        (gold1, gold2) = question.gold_articles
+
+        gold_doc1 = ''.join(question.context[gold1])
+        gold_doc2 = ''.join(question.context[gold2])
+
+        tokenized_question = nltk.word_tokenize(question.question)
+        tokenized_doc_1 = nltk.word_tokenize(gold_doc1)
+        tokenized_doc_2 = nltk.word_tokenize(gold_doc2)
+
+        bitext.append(AlignedSent(tokenized_question, tokenized_doc_1))
+        bitext.append(AlignedSent(tokenized_question, tokenized_doc_2))
+
+    return bitext
 
 
 class IBM1FeatureExtractor(FeatureExtractor):
@@ -33,24 +56,16 @@ class IBM1FeatureExtractor(FeatureExtractor):
             dataset = Dataset.from_file(constants.TRAIN_HOTPOT_SET)
 
             bitext = []
-            for question in tqdm(dataset):
-                (gold1, gold2) = question.gold_articles
+            batches = parallel.chunk(constants.CHUNK_SIZE, dataset.questions)
+            # for partial_bitext in map(_build_bitext, batches):
+            for partial_bitext in parallel.execute(_build_bitext, batches):
+                bitext.extend(partial_bitext)
 
-                gold_doc1 = ''.join(question.context[gold1])
-                gold_doc2 = ''.join(question.context[gold2])
+            self.ibm1 = nltk.IBMModel1(bitext, 5)
 
-                tokenized_question = nltk.word_tokenize(question.question)
-                tokenized_doc_1 = nltk.word_tokenize(gold_doc1)
-                tokenized_doc_2 = nltk.word_tokenize(gold_doc2)
-
-                bitext.append(AlignedSent(tokenized_question, tokenized_doc_1))
-                bitext.append(AlignedSent(tokenized_question, tokenized_doc_2))
-
-                self.ibm1 = nltk.IBMModel1(bitext, 5)
-
-                os.makedirs(constants.FEATURE_EXTRACTION_DIR, exist_ok=True)
-                with open(constants.IBM_MODEL, 'wb') as file:
-                    pickle.dump(self.ibm1, file)
+            os.makedirs(constants.FEATURE_EXTRACTION_DIR, exist_ok=True)
+            with open(constants.IBM_MODEL, 'wb') as file:
+                pickle.dump(self.ibm1, file)
 
     def extract(self, question: str, doc: str):
 
