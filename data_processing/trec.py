@@ -45,14 +45,19 @@ def build(use_less_memory: bool):
 
     # create document database
     helpers.log('Creating documents database.')
+    db = sqlite3.connect(DOCUMENT_DB)
+    cursor: sqlite3.Cursor = db.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS documents (id INTEGER PRIMARY KEY, text TEXT)")
+    db.commit()
+    cursor.close()
+    db.close()
+
     dfs = []
 
     helpers.log('Extracting TREC documents.')
     if USE_LESS_MEMORY:
-        for _, df in parallel.execute(_process_raw_data_folder, folder_paths):
-            dfs.append(df)
-        df: pd.DataFrame = pd.concat(dfs, ignore_index=True)
-        df.to_pickle(DOCUMENT_DB, compression='gzip')
+        for _ in parallel.execute(_process_raw_data_folder, folder_paths):
+            pass
         logging.info(f'[{datetime.now()}]\t[{os.getpid()}]\tExtraction done.')
     else:
         for doc_triples_by_folder in parallel.execute(_process_raw_data_folder, folder_paths):
@@ -84,10 +89,8 @@ def _process_raw_data_folder(folder_path: str):
     :param folder_path: The path to the folder where the compressed JSON collection of raw wiki data lies.
     :return: A sorted collection of (document_id, document_title, trec_document_string)
     """
-    doc_pairs: Dict[str, List[Any]] = {
-        'id': [],
-        'text': []
-    }
+    doc_count = 0
+    doc_pairs: List[Tuple[int, str]] = []
     doc_triples = []
     file_paths = sorted(glob(os.path.join(folder_path, '*.bz2')))
     for file_path in file_paths:
@@ -95,18 +98,27 @@ def _process_raw_data_folder(folder_path: str):
             for line in file:
                 doc = json.loads(line.decode('utf-8'))
                 doc_id, doc_title, doc_str = _extract_doc(doc)
-                doc_pairs['id'].append(doc_id)
-                doc_pairs['text'].append(doc_str)
+                doc_pairs.append((doc_id, doc_str))
+                doc_count += 1
                 # doc_triples.append((doc_id, doc_title, _build_trec(doc_id, doc_title, doc_str)))
 
     folder = folder_path.split("/")[-1]
     helpers.log(f'Extracted documents from folder {folder}.')
 
-    df = pd.DataFrame(doc_pairs)
+    db = sqlite3.connect(DOCUMENT_DB)
+    cursor = db.cursor()
+    cursor.executemany("INSERT INTO documents (id, text) VALUES (?, ?)", doc_pairs)
+    db.commit()
+    cursor.close()
+    db.close()
 
-    helpers.log(f'Persisted documents to DataFrame.')
+    helpers.log(f'Persisted {doc_count} documents to database.')
 
-    return doc_triples, df
+    if USE_LESS_MEMORY:
+        file_name = os.path.join(TREC_CORPUS_DIR, f'{folder}.trectext')
+        # _process_doc_triples(doc_triples, file_name)
+    else:
+        return doc_triples
 
 
 def _process_doc_triples(doc_triples: List[Tuple[int, str, str]], file_name: str = None):

@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import string
 import pyndri
@@ -87,6 +88,13 @@ class Index(object):
         self.index = pyndri.Index(f'{INDRI_INDEX_DIR}')
         self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
         self.id2tf = self.index.get_term_frequencies()
+
+        # Monte Carlo Estimation for document length:
+        sample = np.random.choice(np.arange(self.index.document_base(), self.index.maximum_document()), 1000000, False)
+        doc_lengths = np.empty(1000000, dtype=np.float)
+        for (idx, length) in enumerate(sample):
+            doc_lengths[idx] = length
+        self.avg_doc_len = float(doc_lengths.mean())
 
         self.tokenizer = Tokenizer()
 

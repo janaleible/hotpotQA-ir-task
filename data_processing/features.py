@@ -13,8 +13,8 @@ import json
 
 def build():
     iterator: List[Tuple[str, str, Callable]] = [
-        (ct.TRAIN_HOTPOT_SET, ct.TRAIN_UNIGRAM_TFIDF_CANDIDATES, 10),
-        (ct.DEV_HOTPOT_SET, ct.DEV_UNIGRAM_TFIDF_CANDIDATES, 2)
+        (ct.TRAIN_HOTPOT_SET, ct.TRAIN_CANDIDATES_DB, 10),
+        (ct.DEV_HOTPOT_SET, ct.DEV_CANDIDATES_DB, 2)
     ]
     for (question_set_path, candidate_set_path, chunk) in iterator:
         _set = question_set_path.split("/")[-1].split("_")[0]
