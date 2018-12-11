@@ -143,7 +143,7 @@ def _extract_tokens(row: List[str], index: Index, question_text: str, doc_iid: i
     doc_tokens = list(index.get_document_by_int_id(doc_iid))
     query_tokens = [index.token2id[token] for token in index.tokenize(question_text)]
 
-    row.extend([json.dumps(doc_tokens), json.dumps(query_tokens)])
+    row.extend([json.dumps(query_tokens), json.dumps(doc_tokens)])
 
     return doc_tokens, query_tokens
 
