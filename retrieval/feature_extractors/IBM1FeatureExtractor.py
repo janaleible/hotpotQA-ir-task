@@ -17,8 +17,12 @@ class IBM1FeatureExtractor(FeatureExtractor):
     ibm1: nltk.IBMModel1
     normalized: bool
 
-    def __init__(self, index: Index, feature_name: str, normalized: bool):
-        super().__init__(index, feature_name)
+    @property
+    def feature_name(self) -> str:
+        return 'IBM1'
+
+    def __init__(self, normalized: bool):
+        super().__init__(None)
 
         self.normalized = normalized
 
@@ -67,7 +71,7 @@ class IBM1FeatureExtractor(FeatureExtractor):
 
 if __name__ == '__main__':
 
-    FE = IBM1FeatureExtractor(None, '', False)
+    FE = IBM1FeatureExtractor(False)
 
     feature = FE.extract(
         'Were Scott Derrickson and Ed Wood of the same nationality?',

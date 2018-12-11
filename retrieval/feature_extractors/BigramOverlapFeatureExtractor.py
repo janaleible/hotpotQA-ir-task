@@ -9,8 +9,12 @@ class BigramOverlapFeatureExtractor(FeatureExtractor):
 
     normalized: bool
 
-    def __init__(self, index: Index, feature_name: str, normalized: bool):
-        super().__init__(index, feature_name)
+    @property
+    def feature_name(self) -> str:
+        return f'BigramOverlap{ "Normalized" if self.normalized else "Unnormalized" }'
+
+    def __init__(self, normalized: bool):
+        super().__init__(None)
 
         self.normalized = normalized
         self.tokenizer = Tokenizer()
@@ -33,9 +37,7 @@ class BigramOverlapFeatureExtractor(FeatureExtractor):
 
 if __name__ == '__main__':
 
-    # index = Index()
-
-    FE = BigramOverlapFeatureExtractor(None, '', False)
+    FE = BigramOverlapFeatureExtractor(False)
 
     feature = FE.extract(
         'Were Scott Derrickson and Ed Wood of the same nationality?',

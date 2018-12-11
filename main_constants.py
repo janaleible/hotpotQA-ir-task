@@ -69,7 +69,7 @@ L2R_LEARNING_PROGRESS_PLOT = os.path.join(L2R_MODEL_DIR, 'learning_progress.pdf'
 L2R_EVAL = os.path.join(L2R_MODEL_DIR, 'trec_eval_{}.json')
 L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg_{}.json')
 
-FEATURE_EXTRACTION_DIR = os.path.join(BASE_DIR, 'data', 'feature-extraction')
+FEATURE_EXTRACTION_DIR = os.path.join(BASE_DIR, 'model', 'translation')
 IBM_MODEL = os.path.join(FEATURE_EXTRACTION_DIR, f'ibm1_{SETTING}.pickle')
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
