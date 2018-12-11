@@ -1,16 +1,19 @@
 from abc import abstractmethod
-
 from services.index import Index
 
 
 class FeatureExtractor(object):
     index: Index
-    feature_name: str
 
-    def __init__(self, index: Index, feature_name: str):
+    @property
+    @abstractmethod
+    def feature_name(self) -> str:
+        raise NotImplementedError
+
+    def __init__(self, index: Index):
         super().__init__()
+
         self.index = index
-        self.feature_name = feature_name
 
     @abstractmethod
     def extract(self, question: str, doc: str):

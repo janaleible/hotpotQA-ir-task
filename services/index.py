@@ -25,7 +25,6 @@ class Tokenizer:
                 stopwords.add(elem.text)
             self.stopwords = frozenset(stopwords)
         elif INDRI_PARAMETERS.split('/')[-1] == 'index.xml':
-            helpers.log('Not loading stopwords.')
             self.stopwords = None
         else:
             raise NotImplementedError(f'Unknown index setting: {INDRI_PARAMETERS.split("/")[-1]}')
@@ -80,8 +79,9 @@ class Index(object):
         self.index.close()
         del self
 
-    def __init__(self, env: str = 'default'):
-        helpers.log(f'Loading index {INDRI_INDEX_DIR} with {env} query environment.')
+    def __init__(self, env: str = 'default', verbose: bool = False):
+        if verbose:
+            helpers.log(f'Loading index {INDRI_INDEX_DIR} with {env} query environment.')
         start = datetime.now()
 
         self.index = pyndri.Index(f'{INDRI_INDEX_DIR}')
@@ -119,7 +119,8 @@ class Index(object):
             raise ValueError(f'Unknown environment configuration {env}')
 
         stop = datetime.now()
-        helpers.log(f'Loaded index in {stop - start}.')
+        if verbose:
+            helpers.log(f'Loaded index in {stop - start}.')
 
     def unigram_query(self, text: str, request: int = 5000) -> List[Tuple[int, float]]:
         """Retrieve documents according to unigram text search."""

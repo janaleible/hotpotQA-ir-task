@@ -2,6 +2,7 @@ import os
 import torch
 
 # use tmp dir on cluster, project root locally
+
 BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) else '.')
 
 # switch between dummy and full data setting
@@ -18,7 +19,7 @@ RELEVANT_DOCUMENTS = 2
 # Data constants
 RAW_DATA_DIR = os.path.join(BASE_DIR, 'data', 'raw')
 TREC_CORPUS_DIR = os.path.join(BASE_DIR, 'data', 'trec')
-DOCUMENT_DB = os.path.join(BASE_DIR, 'data', 'documents.sqlite')
+DOCUMENT_DB = os.path.join(BASE_DIR, 'data', 'documents.gzip')
 
 # Index constants
 INDEX_DIR = os.path.join(BASE_DIR, 'data', 'index')
@@ -78,8 +79,24 @@ DEV_NO_CANDIDATES = 1000
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
 TRAIN_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
 DEV_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')
-BASE_COLUMN_NAMES = ['question_id', 'type', 'level', 'document_id', 'question', 'document', 'target']
+BASE_COLUMN_NAMES = ['question_id', 'type', 'level', 'document_id', 'question', 'document']
+TARGET_COLUMN_NAME = ['target']
+EXTRACTORS = ['entity']
 
 # reference constants
 TRAIN_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'train_{SETTING}_reference.json')
 DEV_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'dev_{SETTING}_reference.json')
+
+# entity recognition constants
+E2I = {
+    "PER": 0,
+    "LOC": 1,
+    "ORG": 2,
+    "MISC": 3
+}
+I2E = {
+    0: "PER",
+    1: "LOC",
+    2: "ORG",
+    3: "MISC"
+}

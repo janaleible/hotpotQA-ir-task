@@ -1,4 +1,5 @@
-import concurrent.futures
+import os
+from multiprocessing import get_context
 import itertools
 from typing import Callable, Iterable
 
@@ -17,5 +18,6 @@ def chunk(n, iterable):
 
 def execute(func: Callable, items: Iterable):
     """Execute a callable over the iterable in parallel."""
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        return executor.map(func, items)
+
+    with get_context("spawn").Pool(os.cpu_count()) as pool:
+        return pool.map(func, items)
