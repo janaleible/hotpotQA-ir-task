@@ -51,7 +51,7 @@ class Config(object):
 
 models = {
     'max_pool_bllr_pw': Config(**{'name': 'max_pool_bllr_pw',
-                                  'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                                  'train_candidate_db': const.TRAIN_CANDIDATES_DB,
                                   'train_question_set': const.TRAIN_HOTPOT_SET,
                                   'dev_question_set': const.DEV_HOTPOT_SET,
                                   'query_encoder': MaxPoolEncoder,
@@ -67,7 +67,7 @@ models = {
                                   }}
                                ),
     'max_pool_llr_pw': Config(**{'name': 'max_pool_llr_pw',
-                                 'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                                 'train_candidate_db': const.TRAIN_CANDIDATES_DB,
                                  'train_question_set': const.TRAIN_HOTPOT_SET,
                                  'dev_question_set': const.DEV_HOTPOT_SET,
                                  'query_encoder': MaxPoolEncoder,
@@ -83,7 +83,7 @@ models = {
                                  }}
                               ),
     'mean_pool_bllr_pw': Config(**{'name': 'mean_pool_bllr_pw',
-                                   'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                                   'train_candidate_db': const.TRAIN_CANDIDATES_DB,
                                    'train_question_set': const.TRAIN_HOTPOT_SET,
                                    'dev_question_set': const.DEV_HOTPOT_SET,
                                    'query_encoder': MeanPoolEncoder,
@@ -98,7 +98,7 @@ models = {
                                        'in_features': 50
                                    }}),
     'mean_pool_llr_pw': Config(**{'name': 'mean_pool_llr_pw',
-                                  'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                                  'train_candidate_db': const.TRAIN_CANDIDATES_DB,
                                   'train_question_set': const.TRAIN_HOTPOT_SET,
                                   'dev_question_set': const.DEV_HOTPOT_SET,
                                   'query_encoder': MeanPoolEncoder,
@@ -113,7 +113,7 @@ models = {
                                       'in_features': 50 * 2
                                   }}),
     'gru_llr_pw': Config(**{'name': 'gru_llr_pw',
-                            'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                            'train_candidate_db': const.TRAIN_CANDIDATES_DB,
                             'train_question_set': const.TRAIN_HOTPOT_SET,
                             'dev_question_set': const.DEV_HOTPOT_SET,
                             'query_encoder': GRUEncoder,
