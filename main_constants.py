@@ -21,7 +21,7 @@ RELEVANT_DOCUMENTS = 2
 # Data constants
 RAW_DATA_DIR = os.path.join(BASE_DIR, 'data', 'raw')
 TREC_CORPUS_DIR = os.path.join(BASE_DIR, 'data', 'trec')
-DOCUMENT_DB = os.path.join(BASE_DIR, 'data', 'documents.sqlite')
+DOCUMENT_DB = os.path.join(BASE_DIR, 'data', 'documents', 'documents.sqlite')
 
 # Index constants
 INDEX_DIR = os.path.join(BASE_DIR, 'data', 'index')
