@@ -138,8 +138,11 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
 
 def _extract_doc_identifiers(row: List[str], index: Index, doc_id: int) -> Tuple[int, str]:
     doc_wid = index.int2wid[doc_id]
+    # hack for taking care of double title. prefer the proper one to the disambiguation one regardless of what the
+    # index says.
+    if doc_wid == 38754454:
+        doc_wid = 2209045
     doc_title = index.wid2title[doc_wid]
-
     row.extend([json.dumps(doc_id), json.dumps(doc_wid), json.dumps(doc_title)])
 
     return doc_wid, doc_title
