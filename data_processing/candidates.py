@@ -13,10 +13,11 @@ from services.index import Index
 
 INDEX: Index
 COLUMNS = ct.CANDIDATE_COLUMNS
+QUESTION_COUNTS: Dict[str, int]
 
 
 def build():
-    global INDEX, COLUMNS
+    global INDEX, COLUMNS, QUESTION_COUNTS
     INDEX = Index('tfidf')
     helpers.log('Loaded index.')
 
@@ -38,9 +39,14 @@ def build():
         cursor = db.cursor()
         cursor.execute(sql.create_candidate_table)
         db.commit()
+        helpers.log('Created candidates table.')
+
+        QUESTION_COUNTS = cursor.execute(sql.count_question_rows).fetchall()
+        QUESTION_COUNTS = {json.loads(_id): _count for (_id, _count) in QUESTION_COUNTS}
+        helpers.log(f'Retrieved question counts for {len(QUESTION_COUNTS)} questions.')
+
         cursor.close()
         db.close()
-        helpers.log('Created candidates table.')
 
         helpers.log(f'Creating {split} candidate set with {len(_set)} question.')
         total_count = 0
@@ -53,6 +59,8 @@ def build():
 def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
     start = datetime.now()
     (no, batch), db, cursor = numbered_batch, None, None
+    processed_count = 0
+    skipped_count = 0
 
     for split, question in batch:
         if split == 'train':
@@ -69,6 +77,10 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
         _level = question['level']
         _str = question['question']
         relevant_titles = list(map(lambda item: item[0], question['supporting_facts']))
+
+        if QUESTION_COUNTS.get(_id, 0) == no_candidates:
+            skipped_count += 1
+            continue
 
         # store relevant documents row
         rows: List[List[str]] = []
@@ -112,9 +124,14 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
             cursor = db.cursor()
         cursor.executemany(sql.insert_candidate, rows)
         db.commit()
-    cursor.close()
-    db.close()
-    helpers.log(f'Processed batch {no} in {datetime.now() - start}')
+        processed_count += 1
+
+    if db is not None:
+        cursor.close()
+        db.close()
+
+    end = datetime.now()
+    helpers.log(f'Processed batch {no} in {end - start}. Processed {processed_count}. Skipped {skipped_count}')
 
     return len(batch)
 
@@ -148,6 +165,7 @@ def _extract_tokens(row: List[str], index: Index, question_text: str, doc_iid: i
 
 
 def _extract_tfidf_score(row: List[str], index: Index, doc_tokens: List[int], question_tokens: List[int]) -> float:
+    """Implementation according to http://www.lemurproject.org/lemur/tfidf.pdf"""
     doc_len = len(doc_tokens)
     tfidf = 0.0
     question_token_counts = cl.Counter(question_tokens)

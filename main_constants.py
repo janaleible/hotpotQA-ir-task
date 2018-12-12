@@ -6,8 +6,8 @@ import torch
 BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) else '.')
 
 # switch between dummy and full data setting
-SETTING = 'dummy'
 # SETTING = 'full'
+SETTING = 'full'
 
 PROCESS_CONTEXT = 'fork'
 
@@ -79,11 +79,11 @@ VOCAB_SIZE = 400000
 BATCH_SIZE = 256
 
 # candidate constants
-TRAIN_DEV_SPLIT = 85000
+TRAIN_DEV_SPLIT = 90
 TRAIN_NO_CANDIDATES = 10
 DEV_NO_CANDIDATES = 1000
-TRAIN_CANDIDATES_CHUNK = 1000
-DEV_CANDIDATES_CHUNK = 1000
+TRAIN_CANDIDATES_CHUNK = 1
+DEV_CANDIDATES_CHUNK = 1
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
 TRAIN_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.sqlite')
 DEV_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.sqlite')

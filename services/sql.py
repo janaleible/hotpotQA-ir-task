@@ -12,6 +12,8 @@ insert_candidate = """INSERT INTO candidates
     tfidf, relevance)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"""
 
+count_question_rows = """SELECT question_id, COUNT(*) FROM candidates GROUP BY question_id"""
+
 
 def create_table(name: str = 'retrievals') -> str:
     return f"""
