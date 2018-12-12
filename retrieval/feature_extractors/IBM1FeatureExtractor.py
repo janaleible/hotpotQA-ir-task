@@ -40,8 +40,8 @@ class IBM1FeatureExtractor(FeatureExtractor):
     normalized: bool
 
     @property
-    def feature_name(self) -> str:
-        return 'IBM1'
+    def feature_name(self) -> List[str]:
+        return [f'{ "n" if self.normalized else "" }ibm1']
 
     def __init__(self, normalized: bool):
         super().__init__(None)
@@ -76,7 +76,9 @@ class IBM1FeatureExtractor(FeatureExtractor):
 
         probability = 1
         for alignment in aligned_sentence.alignment:
-            probability *= self.ibm1.translation_table[aligned_sentence.words[alignment[0]]][aligned_sentence.mots[alignment[1]]]
+            word = aligned_sentence.words[alignment[0]]
+            mot = None if alignment[1] is None else aligned_sentence.mots[alignment[1]]
+            probability *= self.ibm1.translation_table[word][mot]
 
         if self.normalized:
             probability /= len(tokenized_question)

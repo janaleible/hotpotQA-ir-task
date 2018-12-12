@@ -1,3 +1,5 @@
+from typing import List
+
 from retrieval.feature_extractors.FeatureExtractor import FeatureExtractor
 from services.index import Index
 
@@ -5,8 +7,8 @@ from services.index import Index
 class QuestionWordFeatureExtractor(FeatureExtractor):
 
     @property
-    def feature_name(self) -> str:
-        return 'QuestionWord'
+    def feature_name(self) -> List[str]:
+        return [f'q{qword}' for qword in self.question_words]
 
     def __init__(self):
         super().__init__(None)

@@ -109,3 +109,28 @@ I2E = {
     2: "ORG",
     3: "MISC"
 }
+
+
+EXTRACTORS = [
+    # 'entity',
+    'ibm1',
+    'nibm1',
+    'bigram',
+    'nbigram',
+    'doclen',
+    'qword'
+]
+BASE_COLUMN_NAMES = [
+    'query_id',
+    'type',
+    'level',
+    'doc_id',
+    'doc_wid',
+    'doc_title',
+    'query_tokens',
+    'doc_tokens',
+]
+TARGET_COLUMN_NAME = 'relevant'
+
+FEATURES_DIR = os.path.join(BASE_DIR, 'data', 'feature-extraction')
+FEATURE_EXTRACTION_DB = os.path.join(FEATURES_DIR, 'feature.db')

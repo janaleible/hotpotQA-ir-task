@@ -8,7 +8,7 @@ import spacy
 
 
 class EntityExtractor(FeatureExtractor):
-    feature_name = 'entity_match'
+    feature_name = ['entity_match']
 
     entity_model: Any
     e2i: Dict[str, int] = ct.E2I
