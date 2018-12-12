@@ -1,6 +1,5 @@
 import copy
 import os
-import pickle
 import sqlite3
 from typing import List, Any, Tuple, Dict, Callable
 
@@ -91,7 +90,7 @@ def build():
 
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(question_set), question_set))
-        for batch_count in map(_build_candidates, _set_generator):
+        for batch_count in parallel.execute(_build_candidates, _set_generator):
             total_count += batch_count
 
         helpers.log(f'Created {_set} candidate set with {total_count} questions in {datetime.now() - start}')
