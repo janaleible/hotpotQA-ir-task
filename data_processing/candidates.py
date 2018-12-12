@@ -202,4 +202,6 @@ def __doc_tf_fn(token_count: int, index: Index, doc_len: int) -> float:
 
 
 def __idf_fn(token: int, index: Index):
+    if index.id2df.get(token, -1) == -1:
+        return 0
     return math.log(index.index.document_count() / index.id2df[token])
