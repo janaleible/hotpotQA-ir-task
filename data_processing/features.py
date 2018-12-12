@@ -14,7 +14,6 @@ from services import parallel, helpers
 from services.index import Index
 from datetime import datetime
 import main_constants as constants
-import pandas as pandas
 import json
 
 INDEX: Index
@@ -22,7 +21,10 @@ EXTRACTORS: List[FeatureExtractor]
 COLUMNS: List[str]
 
 
-def pandas_to_db(_set: str, dataframe: pandas.DataFrame):
+def pandas_to_db(_set: str, rows: List[Any]):
+
+    global COLUMNS
+
     if _set == 'train':
         db_path = constants.TRAIN_FEATURES_DB
     elif _set == 'dev':
@@ -33,11 +35,10 @@ def pandas_to_db(_set: str, dataframe: pandas.DataFrame):
     connection = sqlite3.connect(db_path)
     cursor = connection.cursor()
     cursor.execute(
-        f'CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, {", ".join(col + " TEXT" for col in dataframe.columns.values) })')
+        f'CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, {", ".join(col + " TEXT" for col in COLUMNS) })')
     connection.commit()
 
-    cursor.executemany(f'INSERT INTO features {", ".join(col + " TEXT" for col in dataframe.columns.values) } VALUES ({", ".join(["?"] * len(dataframe.columns.values))})',
-                       [tuple(row) for (i, row) in dataframe.iterrows()])
+    cursor.executemany(f'INSERT INTO features ({", ".join(col for col in COLUMNS) }) VALUES ({", ".join(["?"] * len(rows[0]))})', [tuple(row) for row in rows])
     connection.commit()
 
 
@@ -102,10 +103,13 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
     batch_index, batch = numbered_batch
     data_frames = []
     _set = None
+
+    rows = []
+
     for candidate_idx, (_set, (
             _id, question_id, _type, level, doc_iid, doc_wid, doc_title, question_text, doc_text, question_tokens,
             doc_tokens, tfidf, relevance)) in enumerate(batch):
-        candidate_df = pandas.DataFrame(index=pandas.RangeIndex(0, len(batch)), columns=COLUMNS)
+
 
         # document -> row
         row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
@@ -113,12 +117,10 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
         row.append(relevance)
 
-        candidate_df.loc[candidate_idx] = row
-
-        data_frames.append(candidate_df)
+        rows.append(row)
 
     helpers.log(f'Processed batch {batch_index} in {datetime.now() - start}')
-    pandas_to_db(_set, pandas.concat(data_frames, ignore_index=True))
+    pandas_to_db(_set, rows)
 
     return len(batch)
 
