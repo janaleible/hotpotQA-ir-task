@@ -21,7 +21,6 @@ COLUMNS: List[str]
 
 
 def rows_to_db(_set: str, rows: List[Any]):
-
     global COLUMNS
 
     if _set == 'train':
@@ -99,16 +98,11 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
     start = datetime.now()
 
     batch_index, batch = numbered_batch
-    data_frames = []
     _set = None
-
     rows = []
-
     for candidate_idx, (_set, (
             _id, question_id, _type, level, doc_iid, doc_wid, doc_title, question_text, doc_text, question_tokens,
             doc_tokens, tfidf, relevance)) in enumerate(batch):
-
-
         # document -> row
         row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
                           question_text, doc_text, question_tokens, doc_tokens, tfidf]

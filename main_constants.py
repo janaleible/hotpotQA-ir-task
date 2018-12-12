@@ -6,8 +6,8 @@ import torch
 BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) else '.')
 
 # switch between dummy and full data setting
+SETTING = 'dummy'
 # SETTING = 'full'
-SETTING = 'full'
 
 PROCESS_CONTEXT = 'fork'
 

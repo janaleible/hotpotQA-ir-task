@@ -23,7 +23,7 @@ def create_features_table(columns: List[str]):
 
 
 def insert_features(columns: List[str]):
-    return f'INSERT INTO features ({", ".join(col for col in columns) }) VALUES ({", ".join(["?"] * (len(columns)-1))})'
+    return f'INSERT INTO features ({", ".join(col for col in columns) }) VALUES ({", ".join(["?"] * (len(columns)))})'
 
 
 def create_table(name: str = 'retrievals') -> str:
