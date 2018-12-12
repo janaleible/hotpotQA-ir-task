@@ -9,7 +9,7 @@ from retrieval.feature_extractors.EntityExtractor import EntityExtractor
 from retrieval.feature_extractors.FeatureExtractor import FeatureExtractor
 from retrieval.feature_extractors.IBM1FeatureExtractor import IBM1FeatureExtractor
 from retrieval.feature_extractors.QuestionWordFeatureExtractor import QuestionWordFeatureExtractor
-from services import parallel, helpers
+from services import parallel, helpers, sql
 from services.index import Index
 from datetime import datetime
 import main_constants as constants
@@ -20,7 +20,7 @@ EXTRACTORS: List[FeatureExtractor]
 COLUMNS: List[str]
 
 
-def pandas_to_db(_set: str, rows: List[Any]):
+def rows_to_db(_set: str, rows: List[Any]):
 
     global COLUMNS
 
@@ -33,11 +33,10 @@ def pandas_to_db(_set: str, rows: List[Any]):
 
     connection = sqlite3.connect(db_path)
     cursor = connection.cursor()
-    cursor.execute(
-        f'CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, {", ".join(col + " TEXT" for col in COLUMNS) })')
+    cursor.execute(sql.create_features_table(COLUMNS))
     connection.commit()
 
-    cursor.executemany(f'INSERT INTO features ({", ".join(col for col in COLUMNS) }) VALUES ({", ".join(["?"] * len(rows[0]))})', [tuple(row) for row in rows])
+    cursor.executemany(sql.insert_features(COLUMNS), [tuple(row) for row in rows])
     connection.commit()
 
 
@@ -119,7 +118,7 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         rows.append(row)
 
     helpers.log(f'Processed batch {batch_index} in {datetime.now() - start}')
-    pandas_to_db(_set, rows)
+    rows_to_db(_set, rows)
 
     return len(batch)
 
