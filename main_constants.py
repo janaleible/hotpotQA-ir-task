@@ -71,8 +71,6 @@ L2R_LEARNING_PROGRESS_PLOT = os.path.join(L2R_MODEL_DIR, 'learning_progress.pdf'
 L2R_EVAL = os.path.join(L2R_MODEL_DIR, 'trec_eval_{}.json')
 L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg_{}.json')
 
-FEATURE_EXTRACTION_DIR = os.path.join(BASE_DIR, 'data', 'feature-extraction')
-IBM_MODEL = os.path.join(FEATURE_EXTRACTION_DIR, f'ibm1_{SETTING}.pickle')
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 VOCAB_SIZE = 400000
@@ -85,8 +83,13 @@ DEV_NO_CANDIDATES = 1000
 TRAIN_CANDIDATES_CHUNK = 1
 DEV_CANDIDATES_CHUNK = 1
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
+
 TRAIN_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.sqlite')
+TRAIN_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.pickle')
+
 DEV_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.sqlite')
+DEV_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.pickle')
+
 CANDIDATES_TABLE_NAME = 'candidates'
 CANDIDATE_COLUMNS = ['question_id', 'type', 'level', 'doc_iid', 'doc_wid', 'doc_title',
                      'question_text', 'doc_text', 'question_tokens', 'doc_tokens',
@@ -109,3 +112,42 @@ I2E = {
     2: "ORG",
     3: "MISC"
 }
+
+
+# features constants
+FEATURE_EXTRACTORS = [
+    'entity',
+    'ibm1',
+    'nibm1',
+    'bigram',
+    'nbigram',
+    'doclen',
+    'qword'
+]
+FEATURE_BASE_COLUMN_NAMES = [
+    'query_id',
+    'type',
+    'level',
+    'doc_id',
+    'doc_wid',
+    'doc_title',
+    'question_text',
+    'document_text',
+    'query_tokens',
+    'doc_tokens',
+    'tfidf',
+]
+FEATURE_TARGET_COLUMN_NAME = 'relevant'
+
+TRAIN_FEATURES_CHUNK = 100
+DEV_FEATURES_CHUNK = 100
+FEATURES_DIR = os.path.join(BASE_DIR, 'data', 'features')
+
+TRAIN_FEATURES_DB = os.path.join(FEATURES_DIR, f'train.{SETTING}.feature.db')
+TRAIN_FEATURES_PICKLE = os.path.join(FEATURES_DIR, f'train.{SETTING}.pickle')
+
+DEV_FEATURES_DB = os.path.join(FEATURES_DIR, f'dev.{SETTING}.feature.db')
+DEV_FEATURES_PICKLE = os.path.join(FEATURES_DIR, f'dev.{SETTING}.feature.pickle')
+
+TRANSLATION_MODEL_DIR = os.path.join(BASE_DIR, 'models', 'translation')
+IBM_MODEL = os.path.join(TRANSLATION_MODEL_DIR, f'ibm1_{SETTING}.pickle')

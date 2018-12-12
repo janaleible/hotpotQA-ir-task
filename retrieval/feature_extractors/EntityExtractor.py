@@ -1,3 +1,5 @@
+import re
+
 from retrieval.feature_extractors.FeatureExtractor import FeatureExtractor
 from services.index import Index
 from typing import Any, Dict, List
@@ -8,7 +10,7 @@ import spacy
 
 
 class EntityExtractor(FeatureExtractor):
-    feature_name = 'entity_match'
+    feature_name = ['entity_match_PER', 'entity_match_LOC', 'entity_match_ORG', 'entity_match_MISC']
 
     entity_model: Any
     e2i: Dict[str, int] = ct.E2I
@@ -38,17 +40,19 @@ class EntityExtractor(FeatureExtractor):
         return dict(ents)
 
     def _score_entities(self, qu_ents: Dict[str, List[str]], doc_ents: Dict[str, List[str]]):
+        regex = re.compile("\ +")
         ent_type_word_matches = np.zeros(len(self.e2i), dtype=np.float)
         doc_ent_type_word_count = np.zeros(len(self.e2i), dtype=np.float)
         for _type, _qu_ents in qu_ents.items():
             _id = self.e2i[_type]
             # a bit unnatural but loop first over the documents so I can get the count of words without double-counting.
             for _doc_ents in doc_ents.get(_type, []):
-                for doc_ent_word in _doc_ents.strip().split():
+                for doc_ent_word in regex.split(_doc_ents.strip()):
+                    doc_ent_word = doc_ent_word.lower()
                     # count the words in the document entities
                     doc_ent_type_word_count[_id] += 1
                     for _q_ent in _qu_ents:
-                        for question_entity_word in _q_ent.strip().split():
+                        for question_entity_word in regex.split(_q_ent.strip()):
                             question_entity_word = question_entity_word.lower()
                             ent_type_word_matches[_id] += int(question_entity_word == doc_ent_word)
                             doc_ent_word = doc_ent_word.lower()

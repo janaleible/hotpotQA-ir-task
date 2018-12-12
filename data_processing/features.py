@@ -1,116 +1,138 @@
+import copy
+import os
 import sqlite3
 from typing import List, Any, Tuple, Dict, Callable
 
+from retrieval.feature_extractors.BigramOverlapFeatureExtractor import BigramOverlapFeatureExtractor
+from retrieval.feature_extractors.DocumentLengthFeatureExtractor import DocumentLengthFeatureExtractor
 from retrieval.feature_extractors.EntityExtractor import EntityExtractor
 from retrieval.feature_extractors.FeatureExtractor import FeatureExtractor
+from retrieval.feature_extractors.IBM1FeatureExtractor import IBM1FeatureExtractor
+from retrieval.feature_extractors.QuestionWordFeatureExtractor import QuestionWordFeatureExtractor
 from services import parallel, helpers
 from services.index import Index
 from datetime import datetime
-import main_constants as ct
-import pandas as pd
+import main_constants as constants
 import json
+
+INDEX: Index
+EXTRACTORS: List[FeatureExtractor]
+COLUMNS: List[str]
+
+
+def pandas_to_db(_set: str, rows: List[Any]):
+
+    global COLUMNS
+
+    if _set == 'train':
+        db_path = constants.TRAIN_FEATURES_DB
+    elif _set == 'dev':
+        db_path = constants.DEV_FEATURES_DB
+    else:
+        raise ValueError(f'Unknown set. {_set}')
+
+    connection = sqlite3.connect(db_path)
+    cursor = connection.cursor()
+    cursor.execute(
+        f'CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, {", ".join(col + " TEXT" for col in COLUMNS) })')
+    connection.commit()
+
+    cursor.executemany(f'INSERT INTO features ({", ".join(col for col in COLUMNS) }) VALUES ({", ".join(["?"] * len(rows[0]))})', [tuple(row) for row in rows])
+    connection.commit()
 
 
 def build():
-    iterator: List[Tuple[str, str, Callable]] = [
-        (ct.TRAIN_HOTPOT_SET, ct.TRAIN_CANDIDATES_DB, 10),
-        (ct.DEV_HOTPOT_SET, ct.DEV_CANDIDATES_DB, 2)
-    ]
-    for (question_set_path, candidate_set_path, chunk) in iterator:
-        _set = question_set_path.split("/")[-1].split("_")[0]
-        start = datetime.now()
-        with open(question_set_path, 'r') as file:
-            question_set = json.load(file)
-        dfs = []
-        _set_generator = parallel.chunk(chunk, zip([_set] * len(question_set), question_set))
-        for question_candidate_df in map(_build_candidates, _set_generator):
-            dfs.append(question_candidate_df)
-        candidates_df = pd.concat(dfs, ignore_index=True)
-        pd.to_pickle(candidates_df, candidate_set_path, compression='gzip')
-        helpers.log(f'Created {_set} candidate set in {datetime.now() - start}')
-
-
-def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> pd.DataFrame:
-    start = datetime.now()
-    EXTRACTORS = []
+    global INDEX
     INDEX = Index('tfidf')
-    for extractor_name in ct.EXTRACTORS:
-        if extractor_name == 'entity':
-            EXTRACTORS.append(EntityExtractor(INDEX))
-    COLUMNS = [x for x in ct.BASE_COLUMN_NAMES]
-    COLUMNS.extend([extractor.feature_name for extractor in EXTRACTORS])
-    COLUMNS.extend(ct.TARGET_COLUMN_NAME)
+    helpers.log('Loaded index.')
 
-    no, batch = numbered_batch
-    dfs = []
-    for _set, question in batch:
-        if _set == 'train':
-            no_candidates = ct.TRAIN_NO_CANDIDATES
-        elif _set == 'dev':
-            no_candidates = ct.DEV_NO_CANDIDATES
-        else:
-            raise ValueError(f'Unknown set {_set}.')
+    global EXTRACTORS
+    EXTRACTORS = []
+    if 'entity' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(EntityExtractor(INDEX))
+    if 'ibm1' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(IBM1FeatureExtractor(normalized=False))
+    if 'nibm1' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(IBM1FeatureExtractor(normalized=True))
+    if 'bigram' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(BigramOverlapFeatureExtractor(normalized=False))
+    if 'nbigram' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(BigramOverlapFeatureExtractor(normalized=True))
+    if 'qword' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(QuestionWordFeatureExtractor())
+    if 'doclen' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(DocumentLengthFeatureExtractor())
+    helpers.log('Loaded extractors.')
 
-        _id = question['_id']
-        _type = question['type']
-        _level = question['level']
-        _str = question['question']
-        relevant_titles = list(map(lambda item: item[0], question['supporting_facts']))
+    global COLUMNS
+    COLUMNS = copy.copy(constants.FEATURE_BASE_COLUMN_NAMES)
+    COLUMNS.extend(feature for extractor in EXTRACTORS for feature in extractor.feature_name)
+    COLUMNS.append(constants.FEATURE_TARGET_COLUMN_NAME)
+    helpers.log('Loaded column names.')
 
-        candidate_df = pd.DataFrame(index=pd.RangeIndex(0, no_candidates), columns=COLUMNS)
+    os.makedirs(constants.FEATURES_DIR, exist_ok=True)
+    iterator: List[Tuple[str, str, Callable]] = [
+        (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_CHUNK),
+        (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_CHUNK)
+    ]
 
-        # store relevant documents row
-        relevant_doc_ids = set(INDEX.wid2int[INDEX.title2wid[title]] for title in relevant_titles)
-        for (candidate_idx, doc_id) in enumerate(relevant_doc_ids):
-            row: List[str] = [json.dumps(_id), json.dumps(_type), json.dumps(_level)]
-            _extract_base(row, INDEX, doc_id, _str)
-            _extract_features(row, INDEX, EXTRACTORS, _str, doc_id)
-            row.append(json.dumps(1))  # relevance
+    for (question_set_db, chunk) in iterator:
 
-            candidate_df.iloc[candidate_idx] = row
+        _set = question_set_db.split("/")[-1].split(".")[1]
 
-        # store irrelevant documents row in order scored by tf-idf until reached candidate_set length
-        result_idx = 0
-        candidate_idx = ct.RELEVANT_DOCUMENTS
-        results = INDEX.unigram_query(_str, no_candidates)
-        while candidate_idx < no_candidates:
-            (doc_id, _) = results[result_idx]
-            title = INDEX.wid2title[INDEX.int2wid[doc_id]]
-            target = int(title in relevant_titles)
-            if target == 1:
-                result_idx += 1
-                continue
+        start = datetime.now()
 
-            row: List[str] = [json.dumps(_id), json.dumps(_type), json.dumps(_level)]
-            _extract_base(row, INDEX, doc_id, _str)
-            _extract_features(row, INDEX, EXTRACTORS, _str, doc_id)
-            row.append(json.dumps(target))
+        connection = sqlite3.connect(question_set_db)
+        cursor = connection.cursor()
 
-            candidate_df.iloc[candidate_idx] = row
-            candidate_idx += 1
-            result_idx += 1
+        cursor.execute('SELECT * FROM candidates')
+        question_set = cursor.fetchall()
 
-        dfs.append(candidate_df)
+        total_count = 0
+        _set_generator = parallel.chunk(chunk, zip([_set] * len(question_set), question_set))
+        for batch_count in parallel.execute(_build_candidates, _set_generator):
+            total_count += batch_count
 
-    helpers.log(f'Processed batch {no} in {datetime.now() - start}')
-    return pd.concat(dfs, ignore_index=True)
+        helpers.log(f'Created {_set} candidate set with {total_count} questions in {datetime.now() - start}')
 
 
-def _extract_base(row: List[str], index: Index, doc_id: int, question: str) -> None:
-    document = index.get_document_by_int_id(doc_id)
-    query = index.tokenize(question)
-    query = [index.token2id[token] for token in query]
-    row.extend([json.dumps(doc_id), json.dumps(query), json.dumps(document)])
+def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> int:
+    start = datetime.now()
+
+    batch_index, batch = numbered_batch
+    data_frames = []
+    _set = None
+
+    rows = []
+
+    for candidate_idx, (_set, (
+            _id, question_id, _type, level, doc_iid, doc_wid, doc_title, question_text, doc_text, question_tokens,
+            doc_tokens, tfidf, relevance)) in enumerate(batch):
 
 
-def _extract_features(row: List[str], index: Index, extractors: List[FeatureExtractor], question: str, doc_id: int) -> None:
+        # document -> row
+        row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
+                          question_text, doc_text, question_tokens, doc_tokens, tfidf]
+        _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
+        row.append(relevance)
+
+        rows.append(row)
+
+    helpers.log(f'Processed batch {batch_index} in {datetime.now() - start}')
+    pandas_to_db(_set, rows)
+
+    return len(batch)
+
+
+def _extract_features(row: List[str], extractors: List[FeatureExtractor], question: str, document: str) -> None:
     features: List[str] = []
-    doc_wid = index.int2wid[doc_id]
-    # (doc_str,) = df[]
-    doc_str = "Anarchism is a political philosophy  that advocates self-governed  societies based on voluntary institutions. 0eos0  These are often described as stateless societies , although several authors have defined them more specifically as institutions based on non-hierarchical  free associations . 0eos0  Anarchism holds the state  to be undesirable, unnecessary and harmful. 0eop0 While anti-statism  is central, anarchism specifically entails opposing authority  or hierarchical organisation  in the conduct of all human relations, including--but not limited to--the state system. 0eos0  Anarchism is usually considered a far-left  ideology and much of anarchist economics  and anarchist legal philosophy  reflects anti-authoritarian interpretations  of communism , collectivism , syndicalism , mutualism  or participatory economics ."
+
     for extractor in extractors:
-        feature = json.dumps(extractor.extract(question, doc_str))
-        features.append(feature)
+        feature = extractor.extract(question, document)
+        if isinstance(feature, list):
+            features.extend(feature)
+        else:
+            features.append(json.dumps(feature))
 
     row.extend(features)
 
