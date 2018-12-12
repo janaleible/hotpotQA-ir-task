@@ -1,4 +1,5 @@
 import copy
+import os
 import pickle
 import sqlite3
 from typing import List, Any, Tuple, Dict, Callable
@@ -16,27 +17,66 @@ import main_constants as constants
 import pandas as pandas
 import json
 
+INDEX: Index
+EXTRACTORS: List[FeatureExtractor]
+COLUMNS: List[str]
 
-def pandas_to_db(dataframe: pandas.DataFrame):
 
-    connection = sqlite3.connect(constants.TRAIN_FEATURES_DB)
+def pandas_to_db(_set: str, dataframe: pandas.DataFrame):
+    if _set == 'train':
+        db_path = constants.TRAIN_FEATURES_DB
+    elif _set == 'dev':
+        db_path = constants.DEV_FEATURES_DB
+    else:
+        raise ValueError(f'Unknown set. {_set}')
+
+    connection = sqlite3.connect(db_path)
     cursor = connection.cursor()
-    cursor.execute(f'CREATE TABLE IF NOT EXISTS features ({", ".join(col + " TEXT" for col in dataframe.columns.values) })')
+    cursor.execute(
+        f'CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, {", ".join(col + " TEXT" for col in dataframe.columns.values) })')
     connection.commit()
 
-    cursor.executemany(f'INSERT INTO features VALUES ({", ".join(["?"]*len(dataframe.columns.values))})',
+    cursor.executemany(f'INSERT INTO features {", ".join(col + " TEXT" for col in dataframe.columns.values) } VALUES ({", ".join(["?"] * len(dataframe.columns.values))})',
                        [tuple(row) for (i, row) in dataframe.iterrows()])
     connection.commit()
 
 
 def build():
+    global INDEX
+    INDEX = Index('tfidf')
+    helpers.log('Loaded index.')
 
+    global EXTRACTORS
+    EXTRACTORS = []
+    if 'entity' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(EntityExtractor(INDEX))
+    if 'ibm1' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(IBM1FeatureExtractor(normalized=False))
+    if 'nibm1' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(IBM1FeatureExtractor(normalized=True))
+    if 'bigram' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(BigramOverlapFeatureExtractor(normalized=False))
+    if 'nbigram' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(BigramOverlapFeatureExtractor(normalized=True))
+    if 'qword' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(QuestionWordFeatureExtractor())
+    if 'doclen' in constants.FEATURE_EXTRACTORS:
+        EXTRACTORS.append(DocumentLengthFeatureExtractor())
+    helpers.log('Loaded extractors.')
+
+    global COLUMNS
+    COLUMNS = copy.copy(constants.FEATURE_BASE_COLUMN_NAMES)
+    COLUMNS.extend(feature for extractor in EXTRACTORS for feature in extractor.feature_name)
+    COLUMNS.append(constants.FEATURE_TARGET_COLUMN_NAME)
+    helpers.log('Loaded column names.')
+
+    os.makedirs(constants.FEATURES_DIR, exist_ok=True)
     iterator: List[Tuple[str, str, Callable]] = [
-        (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_CANDIDATES_PICKLE, constants.TRAIN_FEATURES_DB, 10),
-        (constants.DEV_CANDIDATES_DB, constants.DEV_CANDIDATES_PICKLE, constants.DEV_CANDIDATES_DB, 2)
+        (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_CHUNK),
+        (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_CHUNK)
     ]
 
-    for (question_set_db, feature_pickle_path, feature_db_path, chunk) in iterator:
+    for (question_set_db, chunk) in iterator:
 
         _set = question_set_db.split("/")[-1].split(".")[1]
 
@@ -48,75 +88,50 @@ def build():
         cursor.execute('SELECT * FROM candidates')
         question_set = cursor.fetchall()
 
-        data_frames = []
+        total_count = 0
+        _set_generator = parallel.chunk(chunk, zip([_set] * len(question_set), question_set))
+        for batch_count in map(_build_candidates, _set_generator):
+            total_count += batch_count
 
-        _set_generator = parallel.chunk(constants.CHUNK_SIZE, zip([_set] * len(question_set), question_set))
-
-        for question_candidate_df in map(_build_candidates, _set_generator):
-            data_frames.append(question_candidate_df)
-
-        candidates_df = pandas.concat(data_frames, ignore_index=True)
-
-        pandas.to_pickle(candidates_df, feature_pickle_path, compression='gzip')
-        pandas_to_db(candidates_df)
-
-        helpers.log(f'Created {_set} candidate set in {datetime.now() - start}')
+        helpers.log(f'Created {_set} candidate set with {total_count} questions in {datetime.now() - start}')
 
 
-def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> pandas.DataFrame:
-
+def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> int:
     start = datetime.now()
-
-    extractors = []
-    INDEX = Index('tfidf')
-
-    if 'entity' in constants.FEATURE_EXTRACTORS:
-        extractors.append(EntityExtractor(INDEX))
-    if 'ibm1' in constants.FEATURE_EXTRACTORS:
-        extractors.append(IBM1FeatureExtractor(normalized=False))
-    if 'nibm1' in constants.FEATURE_EXTRACTORS:
-        extractors.append(IBM1FeatureExtractor(normalized=True))
-    if 'bigram' in constants.FEATURE_EXTRACTORS:
-        extractors.append(BigramOverlapFeatureExtractor(normalized=False))
-    if 'nbigram' in constants.FEATURE_EXTRACTORS:
-        extractors.append(BigramOverlapFeatureExtractor(normalized=True))
-    if 'qword' in constants.FEATURE_EXTRACTORS:
-        extractors.append(QuestionWordFeatureExtractor())
-    if 'doclen' in constants.FEATURE_EXTRACTORS:
-        extractors.append(DocumentLengthFeatureExtractor())
-
-    columns = copy.copy(constants.FEATURE_BASE_COLUMN_NAMES)
-    columns.extend(feature for extractor in extractors for feature in extractor.feature_name)
-    columns.append(constants.FEATURE_TARGET_COLUMN_NAME)
 
     batch_index, batch = numbered_batch
     data_frames = []
-
-    for candidate_idx, (_set, (id, question_id, type, level, doc_iid, doc_wid, doc_title, question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance)) in enumerate(batch):
-
-        candidate_df = pandas.DataFrame(index=pandas.RangeIndex(0, len(batch)), columns=columns)
+    _set = None
+    for candidate_idx, (_set, (
+            _id, question_id, _type, level, doc_iid, doc_wid, doc_title, question_text, doc_text, question_tokens,
+            doc_tokens, tfidf, relevance)) in enumerate(batch):
+        candidate_df = pandas.DataFrame(index=pandas.RangeIndex(0, len(batch)), columns=COLUMNS)
 
         # document -> row
-        row: List[str] = [question_id, type, level, doc_iid, doc_wid, doc_title, question_tokens, doc_tokens, tfidf]
-        _extract_features(row, extractors, json.loads(question_text), json.loads(doc_text))
+        row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
+                          question_text, doc_text, question_tokens, doc_tokens, tfidf]
+        _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
         row.append(relevance)
 
-        candidate_df.iloc[candidate_idx] = row
+        candidate_df.loc[candidate_idx] = row
 
         data_frames.append(candidate_df)
 
     helpers.log(f'Processed batch {batch_index} in {datetime.now() - start}')
-    return pandas.concat(data_frames, ignore_index=True)
+    pandas_to_db(_set, pandas.concat(data_frames, ignore_index=True))
+
+    return len(batch)
 
 
 def _extract_features(row: List[str], extractors: List[FeatureExtractor], question: str, document: str) -> None:
-
     features: List[str] = []
 
     for extractor in extractors:
         feature = extractor.extract(question, document)
-        if isinstance(feature, list): features.extend(feature)
-        else: features.append(json.dumps(feature))
+        if isinstance(feature, list):
+            features.extend(feature)
+        else:
+            features.append(json.dumps(feature))
 
     row.extend(features)
 

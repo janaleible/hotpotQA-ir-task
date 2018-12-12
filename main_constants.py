@@ -80,8 +80,8 @@ BATCH_SIZE = 256
 TRAIN_DEV_SPLIT = 85000
 TRAIN_NO_CANDIDATES = 10
 DEV_NO_CANDIDATES = 1000
-TRAIN_CANDIDATES_CHUNK = 1000
-DEV_CANDIDATES_CHUNK = 1000
+TRAIN_CANDIDATES_CHUNK = 1
+DEV_CANDIDATES_CHUNK = 1
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
 
 TRAIN_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.sqlite')
@@ -114,8 +114,9 @@ I2E = {
 }
 
 
+# features constants
 FEATURE_EXTRACTORS = [
-    # 'entity',
+    'entity',
     'ibm1',
     'nibm1',
     'bigram',
@@ -130,14 +131,17 @@ FEATURE_BASE_COLUMN_NAMES = [
     'doc_id',
     'doc_wid',
     'doc_title',
+    'question_text',
+    'document_text',
     'query_tokens',
     'doc_tokens',
-    'tfidf'
+    'tfidf',
 ]
 FEATURE_TARGET_COLUMN_NAME = 'relevant'
 
-# TODO: sort out directories/dataset/setting
-FEATURES_DIR = os.path.join(BASE_DIR, 'data', 'feature-extraction')
+TRAIN_FEATURES_CHUNK = 100
+DEV_FEATURES_CHUNK = 100
+FEATURES_DIR = os.path.join(BASE_DIR, 'data', 'features')
 
 TRAIN_FEATURES_DB = os.path.join(FEATURES_DIR, f'train.{SETTING}.feature.db')
 TRAIN_FEATURES_PICKLE = os.path.join(FEATURES_DIR, f'train.{SETTING}.pickle')

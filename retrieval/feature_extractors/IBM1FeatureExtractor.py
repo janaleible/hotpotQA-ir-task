@@ -85,6 +85,7 @@ class IBM1FeatureExtractor(FeatureExtractor):
 
         return probability
 
+
 if __name__ == '__main__':
 
     FE = IBM1FeatureExtractor(False)

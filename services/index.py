@@ -80,7 +80,7 @@ class Index(object):
         self.index.close()
         del self
 
-    def __init__(self, env: str = 'default', verbose: bool = False):
+    def __init__(self, env: str = 'default', verbose: bool = False, avg_len=False):
         if verbose:
             helpers.log(f'Loading index {INDRI_INDEX_DIR} with {env} query environment.')
         start = datetime.now()
@@ -90,11 +90,13 @@ class Index(object):
         self.id2tf = self.index.get_term_frequencies()
 
         # Monte Carlo Estimation for document length:
-        sample = np.random.choice(np.arange(self.index.document_base(), self.index.maximum_document()), 1000000, False)
-        doc_lengths = np.empty(1000000, dtype=np.float)
-        for (idx, length) in enumerate(sample):
-            doc_lengths[idx] = length
-        self.avg_doc_len = float(doc_lengths.mean())
+        if avg_len:
+            sample = np.random.choice(np.arange(self.index.document_base(), self.index.maximum_document()), 1000000,
+                                      False)
+            doc_lengths = np.empty(1000000, dtype=np.float)
+            for (idx, length) in enumerate(sample):
+                doc_lengths[idx] = length
+            self.avg_doc_len = float(doc_lengths.mean())
 
         self.tokenizer = Tokenizer()
 
