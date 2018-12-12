@@ -62,7 +62,7 @@ class IBM1FeatureExtractor(FeatureExtractor):
 
             self.ibm1 = nltk.IBMModel1(bitext, 5)
 
-            os.makedirs(constants.FEATURE_EXTRACTION_DIR, exist_ok=True)
+            os.makedirs(constants.TRANSLATION_MODEL_DIR, exist_ok=True)
             with open(constants.IBM_MODEL, 'wb') as file:
                 pickle.dump(self.ibm1, file)
 
