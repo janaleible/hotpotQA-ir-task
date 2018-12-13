@@ -101,18 +101,15 @@ def build():
         cursor.close()
         helpers.log(f'Created {_set} features table.')
 
-        rows = []
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
-        for batch_count, batch_rows in parallel.execute(_build_candidates, _set_generator, _as='process'):
+        for batch_count in parallel.execute(_build_candidates, _set_generator, _as='process'):
             total_count += batch_count
-            rows.extend(batch_rows)
-        rows_to_db(_set, rows)
 
         helpers.log(f'Created {_set} features set with {total_count} pairs in {datetime.now() - start_time}')
 
 
-def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> Tuple[int, List[List[str]]]:
+def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> int:
     start_time = datetime.now()
 
     batch_index, batch = numbered_batch
@@ -148,15 +145,10 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         row.append(relevance)
         rows.append(row)
         batch_count += 1
+    rows_to_db(_set, rows)
     helpers.log(f'Processed batch {batch_index} of {batch_count} pairs in {datetime.now() - start_time}')
 
-    return batch_count, rows
-
-
-def _extract_row(item: Tuple[str, int]) -> List[str]:
-
-
-    return row
+    return batch_count
 
 
 def _extract_features(row: List[str], extractors: List[FeatureExtractor], question: str, document: str) -> None:
