@@ -21,8 +21,6 @@ COLUMNS: List[str]
 
 
 def rows_to_db(_set: str, rows: List[Any]):
-    global COLUMNS
-
     if _set == 'train':
         db_path = constants.TRAIN_FEATURES_DB
     elif _set == 'dev':
@@ -37,6 +35,9 @@ def rows_to_db(_set: str, rows: List[Any]):
 
 
 def build():
+    assert constants.TRAIN_FEATURES_CHUNK > 1
+    assert constants.DEV_FEATURES_CHUNK > 1
+
     global INDEX
     INDEX = Index('tfidf')
     helpers.log('Loaded index.')
@@ -74,7 +75,6 @@ def build():
     for (candidate_db_path, feature_db_path, chunk) in iterator:
         start_time = datetime.now()
         _set = candidate_db_path.split("/")[-1].split(".")[1]
-
         candidate_db = sqlite3.connect(candidate_db_path)
         cursor = candidate_db.cursor()
         start = 1  # first id in the database
@@ -101,46 +101,53 @@ def build():
 
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
-        for batch_count, rows in parallel.execute(_build_candidates, _set_generator):
+        for batch_count in parallel.execute(_build_candidates, _set_generator, _as='process'):
             total_count += batch_count
 
-        helpers.log(f'Created {_set} features set with {total_count} questions in {datetime.now() - start_time}')
+        helpers.log(f'Created {_set} features set with {total_count} pairs in {datetime.now() - start_time}')
 
 
-def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> Tuple[int, List[List[str, ...]]]:
+def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> int:
     start_time = datetime.now()
 
     batch_index, batch = numbered_batch
     _set, start = batch[0]
     _, stop = batch[-1]
+
+    batch_count = 0
+    index_range = range(start, stop+1)
+    for i in parallel.execute(_extract_row, zip([_set] * len(index_range), index_range), _as='thread'):
+        batch_count += i
+    helpers.log(f'Processed batch {batch_index} of {batch_count} pairs in {datetime.now() - start_time}')
+
+    return batch_count
+
+
+def _extract_row(item: Tuple[str, int]) -> int:
+    _set, index = item
     if _set == 'train':
         candidate_db_path = constants.TRAIN_CANDIDATES_DB
     elif _set == 'dev':
         candidate_db_path = constants.DEV_CANDIDATES_DB
     else:
         raise ValueError(f'Unknown dataset {_set}.')
+
     candidate_db = sqlite3.connect(candidate_db_path)
     cursor = candidate_db.cursor()
-    cursor.execute(sql.fetch_candidate_batch, (start, stop))
+    candidate_row = cursor.execute(sql.fetch_candidate_by_id, (index,)).fetchone()
+    (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
+     question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
 
-    rows = []
-    for candidate_row in cursor:
-        (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
-         question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
+    row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
+                      question_text, doc_text, question_tokens, doc_tokens, tfidf]
+    _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
+    row.append(relevance)
 
-        # document -> row
-        row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
-                          question_text, doc_text, question_tokens, doc_tokens, tfidf]
-        _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
-        row.append(relevance)
-
-        rows.append(row)
     cursor.close()
     candidate_db.close()
-    rows_to_db(_set, rows)
-    helpers.log(f'Processed batch {batch_index} of {len(batch)} pairs in {datetime.now() - start_time}')
+    rows_to_db(_set, [row])
 
-    return len(batch), rows
+    return 1
 
 
 def _extract_features(row: List[str], extractors: List[FeatureExtractor], question: str, document: str) -> None:
