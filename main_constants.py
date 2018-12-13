@@ -9,6 +9,7 @@ BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) 
 # SETTING = 'dummy'
 SETTING = 'full'
 
+GRAND_BATCH_SIZE = 10000
 THREAD_NO = 2
 PROCESS_CONTEXT = 'fork'
 

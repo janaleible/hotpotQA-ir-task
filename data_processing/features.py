@@ -86,6 +86,8 @@ def build():
         cursor = candidate_db.cursor()
         start = 1  # first id in the database
         (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
+        if _set == 'dev' and constants.SETTING == 'full':
+            stop = 1000000  # truncate dev set
         cursor.close()
         candidate_db.close()
         id_range = range(start, stop + 1)
@@ -106,7 +108,7 @@ def build():
 
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
-        _batched_set_generator = parallel.chunk(10, _set_generator)
+        _batched_set_generator = parallel.chunk(constants.GRAND_BATCH_SIZE, _set_generator)
         for grand_batch_idx, _batch_set in _batched_set_generator:
             grand_batch_count = 0
             for batch_count in parallel.execute(_build_candidates, _batch_set, _as='process'):
@@ -160,8 +162,6 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         return batch_count
     except Exception as e:
         helpers.log(e)
-
-
 
 
 def _extract_features(row: List[str], extractors: List[FeatureExtractor], question: str, document: str) -> None:
