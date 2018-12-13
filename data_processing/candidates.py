@@ -44,7 +44,6 @@ def build():
         QUESTION_COUNTS = cursor.execute(sql.count_question_rows).fetchall()
         QUESTION_COUNTS = {json.loads(_id): _count for (_id, _count) in QUESTION_COUNTS}
         helpers.log(f'Retrieved question counts for {len(QUESTION_COUNTS)} questions.')
-
         cursor.close()
         db.close()
 

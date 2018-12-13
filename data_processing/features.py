@@ -70,8 +70,8 @@ def build():
 
     os.makedirs(constants.FEATURES_DIR, exist_ok=True)
     iterator: List[Tuple[str, str, Callable]] = [
-        (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_DB, constants.TRAIN_FEATURES_CHUNK),
-        # (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_DB, constants.DEV_FEATURES_CHUNK)
+        # (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_DB, constants.TRAIN_FEATURES_CHUNK),
+        (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_DB, constants.DEV_FEATURES_CHUNK)
     ]
 
     for (candidate_db_path, feature_db_path, chunk) in iterator:
@@ -130,7 +130,7 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
     return batch_count, rows
 
 
-def _extract_row(item: Tuple[str, int]) -> int:
+def _extract_row(item: Tuple[str, int]) -> List[str]:
     _set, index = item
     if _set == 'train':
         candidate_db_path = constants.TRAIN_CANDIDATES_DB
@@ -138,10 +138,16 @@ def _extract_row(item: Tuple[str, int]) -> int:
         candidate_db_path = constants.DEV_CANDIDATES_DB
     else:
         raise ValueError(f'Unknown dataset {_set}.')
+    try:
+        candidate_db = sqlite3.connect(candidate_db_path)
+        cursor = candidate_db.cursor()
+        candidate_row = cursor.execute(sql.fetch_candidate_by_id, (index,)).fetchone()
+        cursor.close()
+        candidate_db.close()
+    except Exception as e:
+        helpers.log(e)
+        raise
 
-    candidate_db = sqlite3.connect(candidate_db_path)
-    cursor = candidate_db.cursor()
-    candidate_row = cursor.execute(sql.fetch_candidate_by_id, (index,)).fetchone()
     (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
      question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
 
@@ -149,9 +155,6 @@ def _extract_row(item: Tuple[str, int]) -> int:
                       question_text, doc_text, question_tokens, doc_tokens, tfidf]
     _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
     row.append(relevance)
-
-    cursor.close()
-    candidate_db.close()
 
     return row
 
