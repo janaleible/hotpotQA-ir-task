@@ -1,6 +1,7 @@
 import concurrent.futures
 import itertools
 from typing import Callable, Iterable
+import main_constants as ct
 
 
 def chunk(n, iterable):
@@ -21,5 +22,5 @@ def execute(func: Callable, items: Iterable, _as: str = 'process'):
         with concurrent.futures.ProcessPoolExecutor() as pool:
             return pool.map(func, items)
     elif _as == 'thread':
-        with concurrent.futures.ThreadPoolExecutor() as pool:
+        with concurrent.futures.ThreadPoolExecutor(ct.THREAD_NO) as pool:
             return pool.map(func, items)

@@ -69,7 +69,7 @@ def build():
     os.makedirs(constants.FEATURES_DIR, exist_ok=True)
     iterator: List[Tuple[str, str, Callable]] = [
         (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_DB, constants.TRAIN_FEATURES_CHUNK),
-        (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_DB, constants.DEV_FEATURES_CHUNK)
+        # (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_DB, constants.DEV_FEATURES_CHUNK)
     ]
 
     for (candidate_db_path, feature_db_path, chunk) in iterator:
@@ -116,7 +116,7 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
 
     batch_count = 0
     index_range = range(start, stop+1)
-    for i in parallel.execute(_extract_row, zip([_set] * len(index_range), index_range), _as='thread'):
+    for i in map(_extract_row, zip([_set] * len(index_range), index_range)):
         batch_count += i
     helpers.log(f'Processed batch {batch_index} of {batch_count} pairs in {datetime.now() - start_time}')
 
@@ -138,7 +138,7 @@ def _extract_row(item: Tuple[str, int]) -> int:
     (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
      question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
 
-    row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
+    row: List[str] = [_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
                       question_text, doc_text, question_tokens, doc_tokens, tfidf]
     _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
     row.append(relevance)
