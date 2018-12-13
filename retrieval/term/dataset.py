@@ -11,6 +11,7 @@ class Question(object):
         self.answer = answer
         self.level = level
         self.type = _type
+        self.supporting_facts = supporting_facts
 
         self.gold_articles: Set[str] = set(fact[0] for fact in supporting_facts)
         self.context: Dict[str, List[str]] = {article[0]: article[1] for article in context}

@@ -7,7 +7,7 @@ BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) 
 
 # switch between dummy and full data setting
 # SETTING = 'full'
-SETTING = 'full'
+SETTING = 'dummy'
 
 PROCESS_CONTEXT = 'fork'
 
@@ -85,10 +85,15 @@ DEV_CANDIDATES_CHUNK = 1
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
 
 TRAIN_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.sqlite')
-TRAIN_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.pickle')
+# TRAIN_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.pickle')
+TRAIN_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
 
 DEV_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.sqlite')
-DEV_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.pickle')
+# DEV_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.pickle')
+DEV_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')
+
+# TRAIN_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
+# DEV_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')
 
 CANDIDATES_TABLE_NAME = 'candidates'
 CANDIDATE_COLUMNS = ['question_id', 'type', 'level', 'doc_iid', 'doc_wid', 'doc_title',

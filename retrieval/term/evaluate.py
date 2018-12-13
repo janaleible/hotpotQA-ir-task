@@ -7,7 +7,8 @@ import pytrec_eval
 import json
 import os
 from services import helpers, sql
-from services.evaluation import Evaluator, Run
+from services.evaluator import Evaluator
+from services.run import Run
 
 _WID2TITLE: Dict[int, str]
 _INT2WID: Dict[int, int]
