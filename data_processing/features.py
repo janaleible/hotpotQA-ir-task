@@ -106,11 +106,11 @@ def build():
 
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
-        _batched_set_generator = parallel.chunk(100, _set_generator)
+        _batched_set_generator = parallel.chunk(10, _set_generator)
         for grand_batch_idx, _batch_set in _batched_set_generator:
             grand_batch_count = 0
             for batch_count in parallel.execute(_build_candidates, _batch_set, _as='process'):
-                grand_batch_count += 1
+                grand_batch_count += batch_count
                 total_count += batch_count
             helpers.log(f'Processed {_set} batch of features no {grand_batch_idx} with {grand_batch_count} pairs.')
         helpers.log(f'Created {_set} features set with {total_count} pairs in {datetime.now() - start_time}')
