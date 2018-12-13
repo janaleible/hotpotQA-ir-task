@@ -113,46 +113,51 @@ def build():
 
 
 def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> int:
-    start_time = datetime.now()
+    try:
+        start_time = datetime.now()
 
-    batch_index, batch = numbered_batch
-    _set, start = batch[0]
-    _, stop = batch[-1]
+        batch_index, batch = numbered_batch
+        _set, start = batch[0]
+        _, stop = batch[-1]
 
-    if _set == 'train':
-        candidate_db_path = constants.TRAIN_CANDIDATES_DB
-    elif _set == 'dev':
-        candidate_db_path = constants.DEV_CANDIDATES_DB
-    else:
-        raise ValueError(f'Unknown dataset {_set}.')
-    done = False
-    while not done:
-        try:
-            candidate_db = sqlite3.connect(candidate_db_path)
-            cursor = candidate_db.cursor()
-            candidate_rows = cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
-            cursor.close()
-            candidate_db.close()
-            done = True
-        except Exception as e:
-            helpers.log(e)
+        if _set == 'train':
+            candidate_db_path = constants.TRAIN_CANDIDATES_DB
+        elif _set == 'dev':
+            candidate_db_path = constants.DEV_CANDIDATES_DB
+        else:
+            raise ValueError(f'Unknown dataset {_set}.')
+        done = False
+        while not done:
+            try:
+                candidate_db = sqlite3.connect(candidate_db_path)
+                cursor = candidate_db.cursor()
+                candidate_rows = cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
+                cursor.close()
+                candidate_db.close()
+                done = True
+            except Exception as e:
+                helpers.log(e)
 
-    batch_count = 0
-    rows = []
-    for candidate_row in candidate_rows:
-        (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
-         question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
+        batch_count = 0
+        rows = []
+        for candidate_row in candidate_rows:
+            (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
+             question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
 
-        row: List[str] = [_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
-                          question_text, doc_text, question_tokens, doc_tokens, tfidf]
-        _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
-        row.append(relevance)
-        rows.append(row)
-        batch_count += 1
-    rows_to_db(_set, rows)
-    helpers.log(f'Processed batch {batch_index} of {batch_count} pairs in {datetime.now() - start_time}')
+            row: List[str] = [_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
+                              question_text, doc_text, question_tokens, doc_tokens, tfidf]
+            _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
+            row.append(relevance)
+            rows.append(row)
+            batch_count += 1
+        rows_to_db(_set, rows)
+        helpers.log(f'Processed batch {batch_index} of {batch_count} pairs in {datetime.now() - start_time}')
 
-    return batch_count
+        return batch_count
+    except Exception as e:
+        helpers.log(e)
+
+
 
 
 def _extract_features(row: List[str], extractors: List[FeatureExtractor], question: str, document: str) -> None:
