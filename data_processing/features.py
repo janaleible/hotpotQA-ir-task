@@ -119,10 +119,33 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
     _set, start = batch[0]
     _, stop = batch[-1]
 
+    if _set == 'train':
+        candidate_db_path = constants.TRAIN_CANDIDATES_DB
+    elif _set == 'dev':
+        candidate_db_path = constants.DEV_CANDIDATES_DB
+    else:
+        raise ValueError(f'Unknown dataset {_set}.')
+
+    try:
+        candidate_db = sqlite3.connect(candidate_db_path)
+        cursor = candidate_db.cursor()
+        candidate_rows = cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
+        cursor.close()
+        candidate_db.close()
+    except Exception as e:
+        helpers.log(e)
+        raise
+
     batch_count = 0
     rows = []
-    index_range = range(start, stop+1)
-    for row in map(_extract_row, zip([_set] * len(index_range), index_range)):
+    for candidate_row in candidate_rows:
+        (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
+         question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
+
+        row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
+                          question_text, doc_text, question_tokens, doc_tokens, tfidf]
+        _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
+        row.append(relevance)
         rows.append(row)
         batch_count += 1
     helpers.log(f'Processed batch {batch_index} of {batch_count} pairs in {datetime.now() - start_time}')
@@ -131,30 +154,7 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
 
 
 def _extract_row(item: Tuple[str, int]) -> List[str]:
-    _set, index = item
-    if _set == 'train':
-        candidate_db_path = constants.TRAIN_CANDIDATES_DB
-    elif _set == 'dev':
-        candidate_db_path = constants.DEV_CANDIDATES_DB
-    else:
-        raise ValueError(f'Unknown dataset {_set}.')
-    try:
-        candidate_db = sqlite3.connect(candidate_db_path)
-        cursor = candidate_db.cursor()
-        candidate_row = cursor.execute(sql.fetch_candidate_by_id, (index,)).fetchone()
-        cursor.close()
-        candidate_db.close()
-    except Exception as e:
-        helpers.log(e)
-        raise
 
-    (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
-     question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
-
-    row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
-                      question_text, doc_text, question_tokens, doc_tokens, tfidf]
-    _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
-    row.append(relevance)
 
     return row
 
