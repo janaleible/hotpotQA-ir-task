@@ -22,11 +22,11 @@ fetch_candidate_by_id = """SELECT * FROM candidates WHERE id = ?"""
 
 def create_features_table(columns: List[str]):
     c = ", ".join(col + " TEXT" for col in columns)
-    return f'CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY AUTOINCREMENT, {c})'
+    return f'CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY, {c})'
 
 
 def insert_features(columns: List[str]):
-    return f'INSERT INTO features ({", ".join(col for col in columns) }) VALUES ({", ".join(["?"] * (len(columns)))})'
+    return f'INSERT INTO features VALUES ({", ".join(["?"] * (len(columns)))})'
 
 
 def create_table(name: str = 'retrievals') -> str:

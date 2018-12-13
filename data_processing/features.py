@@ -139,7 +139,7 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
          question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
 
-        row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
+        row: List[str] = [_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
                           question_text, doc_text, question_tokens, doc_tokens, tfidf]
         _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
         row.append(relevance)
