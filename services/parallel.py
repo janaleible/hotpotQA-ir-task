@@ -20,7 +20,7 @@ def execute(func: Callable, items: Iterable, _as: str = 'process'):
     """Execute a callable over the iterable in parallel."""
     if _as == 'process':
         with concurrent.futures.ProcessPoolExecutor() as pool:
-            return pool.map(func, items, timeout=5.0)
+            return pool.map(func, items, timeout=60)
     elif _as == 'thread':
         with concurrent.futures.ThreadPoolExecutor(ct.THREAD_NO) as pool:
             return pool.map(func, items)
