@@ -16,6 +16,8 @@ insert_candidate = """INSERT INTO candidates
 
 count_question_rows = """SELECT question_id, COUNT(*) FROM candidates GROUP BY question_id"""
 
+fetch_candidate_batch = """SELECT * FROM main.candidates WHERE id >= ? AND id <= ?"""
+
 
 def create_features_table(columns: List[str]):
     c = ", ".join(col + " TEXT" for col in columns)

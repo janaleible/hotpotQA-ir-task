@@ -32,9 +32,6 @@ def rows_to_db(_set: str, rows: List[Any]):
 
     connection = sqlite3.connect(db_path)
     cursor = connection.cursor()
-    cursor.execute(sql.create_features_table(COLUMNS))
-    connection.commit()
-
     cursor.executemany(sql.insert_features(COLUMNS), [tuple(row) for row in rows])
     connection.commit()
 
@@ -70,39 +67,59 @@ def build():
 
     os.makedirs(constants.FEATURES_DIR, exist_ok=True)
     iterator: List[Tuple[str, str, Callable]] = [
-        (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_CHUNK),
-        (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_CHUNK)
+        (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_DB, constants.TRAIN_FEATURES_CHUNK),
+        (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_DB, constants.DEV_FEATURES_CHUNK)
     ]
 
-    for (question_set_db, chunk) in iterator:
+    for (candidate_db_path, feature_db_path, chunk) in iterator:
+        start_time = datetime.now()
+        _set = candidate_db_path.split("/")[-1].split(".")[1]
 
-        _set = question_set_db.split("/")[-1].split(".")[1]
+        candidate_db = sqlite3.connect(candidate_db_path)
+        cursor = candidate_db.cursor()
+        start = 1  # first id in the database
+        (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
+        cursor.close()
+        candidate_db.close()
+        id_range = range(start, stop + 1)
+        helpers.log(f'Retrieved {len(id_range)} candidate indices for {_set} set.')
 
-        start = datetime.now()
-
-        connection = sqlite3.connect(question_set_db)
-        cursor = connection.cursor()
-
-        cursor.execute('SELECT * FROM candidates')
-        question_set = cursor.fetchall()
+        feature_db = sqlite3.connect(feature_db_path)
+        cursor = feature_db.cursor()
+        cursor.execute(sql.create_features_table(COLUMNS))
+        feature_db.commit()
+        cursor.close()
+        helpers.log(f'Created {_set} features table.')
 
         total_count = 0
-        _set_generator = parallel.chunk(chunk, zip([_set] * len(question_set), question_set))
+        _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
         for batch_count in parallel.execute(_build_candidates, _set_generator):
             total_count += batch_count
 
-        helpers.log(f'Created {_set} candidate set with {total_count} questions in {datetime.now() - start}')
+        helpers.log(f'Created {_set} candidate set with {total_count} questions in {datetime.now() - start_time}')
 
 
 def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> int:
-    start = datetime.now()
+    start_time = datetime.now()
 
     batch_index, batch = numbered_batch
-    _set = None
+    _set, start = batch[0]
+    _, stop = batch[-1]
+    if _set == 'train':
+        candidate_db_path = constants.TRAIN_CANDIDATES_DB
+    elif _set == 'dev':
+        candidate_db_path = constants.DEV_CANDIDATES_DB
+    else:
+        raise ValueError(f'Unknown dataset {_set}.')
+    candidate_db = sqlite3.connect(candidate_db_path)
+    cursor = candidate_db.cursor()
+    cursor.execute(sql.fetch_candidate_batch, (start, stop))
+
     rows = []
-    for candidate_idx, (_set, (
-            _id, question_id, _type, level, doc_iid, doc_wid, doc_title, question_text, doc_text, question_tokens,
-            doc_tokens, tfidf, relevance)) in enumerate(batch):
+    for candidate_row in cursor:
+        (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
+         question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
+
         # document -> row
         row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
                           question_text, doc_text, question_tokens, doc_tokens, tfidf]
@@ -110,10 +127,10 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         row.append(relevance)
 
         rows.append(row)
-
-    helpers.log(f'Processed batch {batch_index} in {datetime.now() - start}')
+    cursor.close()
+    candidate_db.close()
+    helpers.log(f'Processed batch {batch_index} of {len(batch)} pairs in {datetime.now() - start_time}')
     rows_to_db(_set, rows)
-
     return len(batch)
 
 
