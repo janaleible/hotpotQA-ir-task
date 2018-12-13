@@ -93,13 +93,14 @@ def build():
 
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
-        for batch_count in parallel.execute(_build_candidates, _set_generator):
+        for batch_count, rows in parallel.execute(_build_candidates, _set_generator):
+            rows_to_db(_set, rows)
             total_count += batch_count
 
         helpers.log(f'Created {_set} candidate set with {total_count} questions in {datetime.now() - start_time}')
 
 
-def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> int:
+def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> Tuple[int, List[Tuple[Any, ...]]]:
     start_time = datetime.now()
 
     batch_index, batch = numbered_batch
@@ -130,8 +131,8 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
     cursor.close()
     candidate_db.close()
     helpers.log(f'Processed batch {batch_index} of {len(batch)} pairs in {datetime.now() - start_time}')
-    rows_to_db(_set, rows)
-    return len(batch)
+
+    return len(batch), rows
 
 
 def _extract_features(row: List[str], extractors: List[FeatureExtractor], question: str, document: str) -> None:

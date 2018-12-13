@@ -1,4 +1,4 @@
-import concurrent.futures
+import multiprocessing as mp
 import itertools
 from typing import Callable, Iterable
 
@@ -18,5 +18,5 @@ def chunk(n, iterable):
 def execute(func: Callable, items: Iterable):
     """Execute a callable over the iterable in parallel."""
 
-    with concurrent.futures.ProcessPoolExecutor() as pool:
-        return pool.map(func, items, timeout=60 * 5)
+    with mp.Pool() as pool:
+        return pool.map(func, items)
