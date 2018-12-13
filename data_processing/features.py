@@ -101,15 +101,18 @@ def build():
         cursor.close()
         helpers.log(f'Created {_set} features table.')
 
+        rows = []
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
-        for batch_count in parallel.execute(_build_candidates, _set_generator, _as='process'):
+        for batch_count, batch_rows in parallel.execute(_build_candidates, _set_generator, _as='process'):
             total_count += batch_count
+            rows.extend(batch_rows)
+        rows_to_db(_set, rows)
 
         helpers.log(f'Created {_set} features set with {total_count} pairs in {datetime.now() - start_time}')
 
 
-def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> int:
+def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> Tuple[int, List[List[str]]]:
     start_time = datetime.now()
 
     batch_index, batch = numbered_batch
@@ -117,12 +120,14 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
     _, stop = batch[-1]
 
     batch_count = 0
+    rows = []
     index_range = range(start, stop+1)
-    for i in map(_extract_row, zip([_set] * len(index_range), index_range)):
-        batch_count += i
+    for row in map(_extract_row, zip([_set] * len(index_range), index_range)):
+        rows.append(row)
+        batch_count += 1
     helpers.log(f'Processed batch {batch_index} of {batch_count} pairs in {datetime.now() - start_time}')
 
-    return batch_count
+    return batch_count, rows
 
 
 def _extract_row(item: Tuple[str, int]) -> int:
@@ -140,16 +145,15 @@ def _extract_row(item: Tuple[str, int]) -> int:
     (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
      question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
 
-    row: List[str] = [_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
+    row: List[str] = [question_id, _type, level, doc_iid, doc_wid, doc_title,
                       question_text, doc_text, question_tokens, doc_tokens, tfidf]
     _extract_features(row, EXTRACTORS, json.loads(question_text), json.loads(doc_text))
     row.append(relevance)
 
     cursor.close()
     candidate_db.close()
-    rows_to_db(_set, [row])
 
-    return 1
+    return row
 
 
 def _extract_features(row: List[str], extractors: List[FeatureExtractor], question: str, document: str) -> None:
