@@ -27,13 +27,18 @@ def rows_to_db(_set: str, rows: List[Any]):
         db_path = constants.DEV_FEATURES_DB
     else:
         raise ValueError(f'Unknown set. {_set}')
-
-    connection = sqlite3.connect(db_path)
-    cursor = connection.cursor()
-    cursor.executemany(sql.insert_features(COLUMNS), [tuple(row) for row in rows])
-    connection.commit()
-    cursor.close()
-    connection.close()
+    done = False
+    while not done:
+        try:
+            connection = sqlite3.connect(db_path)
+            cursor = connection.cursor()
+            cursor.executemany(sql.insert_features(COLUMNS), [tuple(row) for row in rows])
+            connection.commit()
+            cursor.close()
+            connection.close()
+            done = True
+        except Exception as e:
+            helpers.log(e)
 
 
 def build():
@@ -80,26 +85,24 @@ def build():
         candidate_db = sqlite3.connect(candidate_db_path)
         cursor = candidate_db.cursor()
         start = 1  # first id in the database
-        if _set == 'train':
-            (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
-        elif _set == 'dev':
-            if constants.SETTING == 'full':
-                stop = 1000000  # truncate
-            else:
-                (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
-        else:
-            raise ValueError('Unknown set.')
+        (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
         cursor.close()
         candidate_db.close()
         id_range = range(start, stop + 1)
         helpers.log(f'Retrieved {len(id_range)} candidate indices for {_set} set.')
 
-        feature_db = sqlite3.connect(feature_db_path)
-        cursor = feature_db.cursor()
-        cursor.execute(sql.create_features_table(COLUMNS))
-        feature_db.commit()
-        cursor.close()
-        helpers.log(f'Created {_set} features table.')
+        done = False
+        while not done:
+            try:
+                feature_db = sqlite3.connect(feature_db_path)
+                cursor = feature_db.cursor()
+                cursor.execute(sql.create_features_table(COLUMNS))
+                feature_db.commit()
+                cursor.close()
+                done = True
+                helpers.log(f'Created {_set} features table.')
+            except Exception as e:
+                helpers.log(e)
 
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
@@ -122,16 +125,11 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         candidate_db_path = constants.DEV_CANDIDATES_DB
     else:
         raise ValueError(f'Unknown dataset {_set}.')
-
-    try:
-        candidate_db = sqlite3.connect(candidate_db_path)
-        cursor = candidate_db.cursor()
-        candidate_rows = cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
-        cursor.close()
-        candidate_db.close()
-    except Exception as e:
-        helpers.log(e)
-        raise
+    candidate_db = sqlite3.connect(candidate_db_path)
+    cursor = candidate_db.cursor()
+    candidate_rows = cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
+    cursor.close()
+    candidate_db.close()
 
     batch_count = 0
     rows = []
