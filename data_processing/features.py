@@ -125,11 +125,17 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         candidate_db_path = constants.DEV_CANDIDATES_DB
     else:
         raise ValueError(f'Unknown dataset {_set}.')
-    candidate_db = sqlite3.connect(candidate_db_path)
-    cursor = candidate_db.cursor()
-    candidate_rows = cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
-    cursor.close()
-    candidate_db.close()
+    done = False
+    while not done:
+        try:
+            candidate_db = sqlite3.connect(candidate_db_path)
+            cursor = candidate_db.cursor()
+            candidate_rows = cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
+            cursor.close()
+            candidate_db.close()
+            done = True
+        except Exception as e:
+            helpers.log(e)
 
     batch_count = 0
     rows = []
