@@ -6,8 +6,8 @@ import torch
 BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) else '.')
 
 # switch between dummy and full data setting
-SETTING = 'dummy'
-# SETTING = 'full'
+# SETTING = 'dummy'
+SETTING = 'full'
 
 PROCESS_CONTEXT = 'fork'
 
@@ -139,8 +139,8 @@ FEATURE_BASE_COLUMN_NAMES = [
 ]
 FEATURE_TARGET_COLUMN_NAME = 'relevant'
 
-TRAIN_FEATURES_CHUNK = 100
-DEV_FEATURES_CHUNK = 100
+TRAIN_FEATURES_CHUNK = 10000
+DEV_FEATURES_CHUNK = 10000
 FEATURES_DIR = os.path.join(BASE_DIR, 'data', 'features')
 
 TRAIN_FEATURES_DB = os.path.join(FEATURES_DIR, f'train.{SETTING}.feature.db')

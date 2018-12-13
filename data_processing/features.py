@@ -78,7 +78,15 @@ def build():
         candidate_db = sqlite3.connect(candidate_db_path)
         cursor = candidate_db.cursor()
         start = 1  # first id in the database
-        (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
+        if _set == 'train':
+            (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
+        elif _set == 'dev':
+            if constants.SETTING == 'full':
+                stop = 1000000  # truncate
+            else:
+                (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
+        else:
+            raise ValueError('Unknown set.')
         cursor.close()
         candidate_db.close()
         id_range = range(start, stop + 1)
@@ -94,13 +102,12 @@ def build():
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
         for batch_count, rows in parallel.execute(_build_candidates, _set_generator):
-            rows_to_db(_set, rows)
             total_count += batch_count
 
-        helpers.log(f'Created {_set} candidate set with {total_count} questions in {datetime.now() - start_time}')
+        helpers.log(f'Created {_set} features set with {total_count} questions in {datetime.now() - start_time}')
 
 
-def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> Tuple[int, List[Tuple[Any, ...]]]:
+def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) -> Tuple[int, List[List[str, ...]]]:
     start_time = datetime.now()
 
     batch_index, batch = numbered_batch
@@ -130,6 +137,7 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         rows.append(row)
     cursor.close()
     candidate_db.close()
+    rows_to_db(_set, rows)
     helpers.log(f'Processed batch {batch_index} of {len(batch)} pairs in {datetime.now() - start_time}')
 
     return len(batch), rows
