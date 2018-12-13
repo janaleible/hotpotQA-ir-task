@@ -112,7 +112,7 @@ def build():
             for batch_count in parallel.execute(_build_candidates, _batch_set, _as='process'):
                 grand_batch_count += 1
                 total_count += batch_count
-            helpers.log(f'Processed {_set} batch of features with {grand_batch_count} pairs.')
+            helpers.log(f'Processed {_set} batch of features no {grand_batch_idx} with {grand_batch_count} pairs.')
         helpers.log(f'Created {_set} features set with {total_count} pairs in {datetime.now() - start_time}')
 
 
