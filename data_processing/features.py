@@ -32,8 +32,8 @@ def rows_to_db(_set: str, rows: List[Any]):
     cursor = connection.cursor()
     cursor.executemany(sql.insert_features(COLUMNS), [tuple(row) for row in rows])
     connection.commit()
-    connection.close()
     cursor.close()
+    connection.close()
 
 
 def build():
