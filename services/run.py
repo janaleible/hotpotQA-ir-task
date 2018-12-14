@@ -49,6 +49,7 @@ class Run(dict):
                 try:
                     (document_text,) = cursor.execute(f"SELECT document_text FROM features WHERE doc_title = ? LIMIT 1", [json.dumps(title)]).fetchone()
                 except:
+                    print(f'failed tp query db {db} with title {json.dumps(title)}, question_id {question_id}')
                     continue
                 document_text = json.loads(document_text)
                 article = [paragraph.split(constants.EOS.strip()) for paragraph in document_text.split(constants.EOP.strip())]

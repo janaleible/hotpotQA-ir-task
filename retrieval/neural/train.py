@@ -225,11 +225,18 @@ def _save_checkpoint(name: str, model: nn.Module, optimizer: optim.Optimizer, be
         with open(ct.RESULT_HOTPOT.format(name, 'train'), 'w') as file:
             json.dump(train_run.to_json(ct.TRAIN_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
 
-        with open(ct.RESULT_RUN.format(name, 'train'), 'w') as file:
-            json.dump(train_run, file)
+        with open(ct.RESULT_RUN_PICKLE.format(name, 'train'), 'wb') as file:
+            pickle.dump(train_run, file)
 
         with open(ct.RESULT_HOTPOT.format(name, 'dev'), 'w') as file:
             json.dump(dev_run.to_json(ct.DEV_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
 
-        with open(ct.RESULT_RUN.format(name, 'dev'), 'w') as file:
+        with open(ct.RESULT_RUN_PICKLE.format(name, 'dev'), 'wb') as file:
+            pickle.dump(dev_run, file)
+
+        with open(ct.RESULT_RUN_JSON.format(name, 'train'), 'w') as file:
+            json.dump(train_run, file)
+
+        with open(ct.RESULT_RUN_JSON.format(name, 'dev'), 'w') as file:
             json.dump(dev_run, file)
+
