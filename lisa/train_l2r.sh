@@ -19,28 +19,33 @@ export LD_LIBRARY_PATH=$CUDA_HOME/lib64:/hpc/eb/Debian9/cuDNN/7.1-CUDA-8.0.4
 
 #Preparing input data (e.g. copying input data from your home folder to scratch, preprocessing)
 mkdir -p "$TMPDIR"/data
+
 mkdir -p "$TMPDIR"/data/l2r
-mkdir -p "$TMPDIR"/data/index
-mkdir -p "$TMPDIR"/data/maps
-mkdir -p "$TMPDIR"/data/candidates
-mkdir -p "$TMPDIR"/data/embeddings
-mkdir -p "$TMPDIR"/data/trec_eval
 cp -r $HOME/hotpotQA-ir-task/data/l2r/ "$TMPDIR"/data/
-cp -r $HOME/hotpotQA-ir-task/data/index/ "$TMPDIR"/data/
+
+mkdir -p "$TMPDIR"/data/maps
 cp -r $HOME/hotpotQA-ir-task/data/maps/ "$TMPDIR"/data/
-cp -r $HOME/hotpotQA-ir-task/data/candidates/ "$TMPDIR"/data/
+
+mkdir -p "$TMPDIR"/data/features
+cp -r $HOME/hotpotQA-ir-task/data/features/ "$TMPDIR"/data/
+
+mkdir -p "$TMPDIR"/data/embeddings
 cp -r $HOME/hotpotQA-ir-task/data/embeddings/ "$TMPDIR"/data/
+
+mkdir -p "$TMPDIR"/data/trec_eval
 cp -r $HOME/hotpotQA-ir-task/data/trec_eval/ "$TMPDIR"/data/
-cp $HOME/hotpotQA-ir-task/index.xml "$TMPDIR"/index.xml
+
+mkdir -p "$TMPDIR"/data/hotpot
+cp -r $HOME/hotpotQA-ir-task/data/hotpot/ "$TMPDIR"/data/
 
 #Running your application
 mkdir -p "$TMPDIR"/models
 cd $HOME/hotpotQA-ir-task
 source venv/bin/activate
 pip install -r requirements.txt
-srun python3 main_retrieval.py -g neural -m max_pool_bllr_pw &>> $HOME/log.log
+srun python3 main_retrieval.py -g neural -m mean_pool_bllr_pw &>> $HOME/log.log
 
 #Aggergating output data (e.g. post-processing, copying data from scratch to your home)
-mkdir -p $HOME/hotpotQA-ir-task/models
-cp -r $TMPDIR/models $HOME/hotpotQA-ir-taks/models
+mkdir -p $HOME/hotpotQA-ir-task/models/mean_pool_bllr_pw
+cp -r $TMPDIR/models $HOME/hotpotQA-ir-task/models/mean_pool_bllr_pw
 
