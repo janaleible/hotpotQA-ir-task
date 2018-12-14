@@ -1,5 +1,5 @@
 import json
-from collections import __init__ as cl
+import collections as cl
 from typing import Dict
 
 import pytrec_eval

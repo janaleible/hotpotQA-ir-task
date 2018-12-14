@@ -156,3 +156,7 @@ DEV_FEATURES_PICKLE = os.path.join(FEATURES_DIR, f'dev.{SETTING}.feature.pickle'
 
 TRANSLATION_MODEL_DIR = os.path.join(BASE_DIR, 'models', 'translation')
 IBM_MODEL = os.path.join(TRANSLATION_MODEL_DIR, f'ibm1_{SETTING}.pickle')
+
+RUN_DIR = os.path.join(L2R_MODEL_DIR, 'runs')
+RESULT_HOTPOT = os.path.join(RUN_DIR, 'hotpot.{}.' + SETTING + '.json') # format with dev|train
+RESULT_RUN = os.path.join(RUN_DIR, '{}.' + SETTING + '.run') # format with dev|train

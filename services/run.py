@@ -11,7 +11,8 @@ class Run(dict):
         self[_id] = ranking
 
     def update_ranking(self, question_id: str, document_title: str, score: float) -> None:
-        if not self.get(question_id, {}):
+        # if not self.get(question_id, {}):
+        if not question_id in self:
             self[question_id] = {}
 
         assert self[question_id].get(document_title, -1) == -1, f'Ranking already ' \
