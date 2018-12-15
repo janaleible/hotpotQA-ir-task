@@ -6,8 +6,8 @@ import torch
 BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) else '.')
 
 # switch between dummy and full data setting
-# SETTING = 'dummy'
-SETTING = 'full'
+# SETTING = 'full'
+SETTING = 'dummy'
 
 GRAND_BATCH_SIZE = 10000
 THREAD_NO = 2
@@ -87,10 +87,15 @@ DEV_CANDIDATES_CHUNK = 1
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
 
 TRAIN_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.sqlite')
-TRAIN_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.pickle')
+# TRAIN_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.pickle')
+TRAIN_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
 
 DEV_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.sqlite')
-DEV_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.pickle')
+# DEV_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.pickle')
+DEV_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')
+
+# TRAIN_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
+# DEV_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')
 
 CANDIDATES_TABLE_NAME = 'candidates'
 CANDIDATE_COLUMNS = ['question_id', 'type', 'level', 'doc_iid', 'doc_wid', 'doc_title',
@@ -153,3 +158,8 @@ DEV_FEATURES_PICKLE = os.path.join(FEATURES_DIR, f'dev.{SETTING}.feature.pickle'
 
 TRANSLATION_MODEL_DIR = os.path.join(BASE_DIR, 'models', 'translation')
 IBM_MODEL = os.path.join(TRANSLATION_MODEL_DIR, f'ibm1_{SETTING}.pickle')
+
+RUN_DIR = os.path.join(L2R_MODEL_DIR, 'runs')
+RESULT_HOTPOT = os.path.join(RUN_DIR, 'hotpot.{}.' + SETTING + '.json') # format with dev|train
+RESULT_RUN_PICKLE = os.path.join(RUN_DIR, '{}.' + SETTING + '.pickle') # format with dev|train
+RESULT_RUN_JSON = os.path.join(RUN_DIR, '{}.' + SETTING + '.run') # format with dev|train

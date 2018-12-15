@@ -23,4 +23,4 @@ pip install -r requirements.txt
 srun python3 retrieval/feature_extractors/IBM1FeatureExtractor.py &>> $HOME/log.log
 
 mkdir -p $HOME/hotpotQA-ir-task/models
-cp -r $TMPDIR/models $HOME/hotpotQA-ir-taks/models
+cp -r $TMPDIR/models $HOME/hotpotQA-ir-task/models
