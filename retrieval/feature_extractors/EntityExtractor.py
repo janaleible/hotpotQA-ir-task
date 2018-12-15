@@ -39,7 +39,7 @@ class EntityExtractor(FeatureExtractor):
 
         return dict(ents)
 
-    def _score_entities(self, qu_ents: Dict[str, List[str]], doc_ents: Dict[str, List[str]]):
+    def _score_entities(self, qu_ents: Dict[str, List[str]], doc_ents: Dict[str, List[str]]) -> np.ndarray:
         regex = re.compile("\ +")
         ent_type_word_matches = np.zeros(len(self.e2i), dtype=np.float)
         doc_ent_type_word_count = np.zeros(len(self.e2i), dtype=np.float)
@@ -58,4 +58,5 @@ class EntityExtractor(FeatureExtractor):
                             doc_ent_word = doc_ent_word.lower()
         # do a safe division where 0s remain 0s.
         # Because of the way it is built, if the doc_count is 0 also the matches are also 0.
-        return np.divide(ent_type_word_matches, doc_ent_type_word_count, where=doc_ent_type_word_count != 0)
+        return np.divide(ent_type_word_matches, doc_ent_type_word_count,
+                         out=np.zeros(len(self.e2i)), where=(doc_ent_type_word_count != 0))

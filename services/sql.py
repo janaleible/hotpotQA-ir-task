@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 create_candidate_table = """CREATE TABLE IF NOT EXISTS candidates
     (
         id INTEGER PRIMARY KEY AUTOINCREMENT, question_id TEXT, type TEXT, level TEXT,
@@ -13,6 +15,18 @@ insert_candidate = """INSERT INTO candidates
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"""
 
 count_question_rows = """SELECT question_id, COUNT(*) FROM candidates GROUP BY question_id"""
+
+fetch_candidate_batch = """SELECT * FROM candidates WHERE id >= ? AND id <= ?"""
+fetch_candidate_by_id = """SELECT * FROM candidates WHERE id = ?"""
+
+
+def create_features_table(columns: List[str]):
+    c = ", ".join(col + " TEXT" for col in columns)
+    return f'CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY, {c})'
+
+
+def insert_features(columns: List[str]):
+    return f'INSERT INTO features VALUES ({", ".join(["?"] * (len(columns) + 1))})' # +1 for the id
 
 
 def create_table(name: str = 'retrievals') -> str:
