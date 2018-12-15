@@ -38,14 +38,17 @@ cp -r $HOME/hotpotQA-ir-task/data/trec_eval/ "$TMPDIR"/data/
 mkdir -p "$TMPDIR"/data/hotpot
 cp -r $HOME/hotpotQA-ir-task/data/hotpot/ "$TMPDIR"/data/
 
+mkdir -p "$TMPDIR"/data/index
+cp -r $HOME/hotpotQA-ir-task/data/index/ "$TMPDIR"/data/
+
 #Running your application
 mkdir -p "$TMPDIR"/models
 cd $HOME/hotpotQA-ir-task
 source venv/bin/activate
 pip install -r requirements.txt
-srun python3 main_retrieval.py -g neural -m mean_pool_bllr_pw &>> $HOME/log.log
+srun python3 main_retrieval.py -g neural -m "max_pool_llr+features_pw" &>> $HOME/log.log
 
 #Aggergating output data (e.g. post-processing, copying data from scratch to your home)
-mkdir -p $HOME/hotpotQA-ir-task/models/mean_pool_bllr_pw
-cp -r $TMPDIR/models $HOME/hotpotQA-ir-task/models/mean_pool_bllr_pw
+#mkdir -p $HOME/hotpotQA-ir-task/models/mean_pool_bllr_pw
+#cp -r $TMPDIR/models $HOME/hotpotQA-ir-task/models/mean_pool_bllr_pw
 
