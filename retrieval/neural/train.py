@@ -122,8 +122,9 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
         questions = questions.to(device=ct.DEVICE, non_blocking=True)
         documents = documents.to(device=ct.DEVICE, non_blocking=True)
         targets = targets.to(device=ct.DEVICE, non_blocking=True)
+        features = features.to(device=ct.DEVICE, non_blocking=True)
 
-        scores = model(questions, documents)
+        scores = model(questions, documents, features)
         loss = model.criterion(scores, targets)
 
         if config.trainable:
@@ -156,8 +157,9 @@ def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_ev
             questions = questions.to(device=ct.DEVICE, non_blocking=True)
             documents = documents.to(device=ct.DEVICE, non_blocking=True)
             targets = targets.to(device=ct.DEVICE, non_blocking=True)
+            features = features.to(device=ct.DEVICE, non_blocking=True)
 
-            scores = model(questions, documents)
+            scores = model(questions, documents, features)
 
             for i in range(len(questions)):
                 question_id = question_ids[i]

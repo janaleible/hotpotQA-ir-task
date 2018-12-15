@@ -50,6 +50,22 @@ class Config(object):
 
 
 models = {
+    'max_pool_llr+features_pw': Config(**{'name': 'max_pool_llr+features_pw',
+                                  'train_candidate_db': const.TRAIN_CANDIDATES_DB,
+                                  'train_question_set': const.TRAIN_HOTPOT_SET,
+                                  'dev_question_set': const.DEV_HOTPOT_SET,
+                                  'query_encoder': MaxPoolEncoder,
+                                  'document_encoder': MaxPoolEncoder,
+                                  'scorer': LinearLogisticRegression,
+                                  'ranker': Pointwise,
+                                  'optimizer': Adam,
+                                  'embedding_dim': 50,
+                                  'epochs': 1000,
+                                  'trainable': True,
+                                  'scorer_kwargs': {
+                                      'in_features': 50
+                                  }}
+                               ),
     'max_pool_bllr_pw': Config(**{'name': 'max_pool_bllr_pw',
                                   'train_candidate_db': const.TRAIN_CANDIDATES_DB,
                                   'train_question_set': const.TRAIN_HOTPOT_SET,
@@ -92,7 +108,7 @@ models = {
                                    'ranker': Pointwise,
                                    'optimizer': Adam,
                                    'embedding_dim': 50,
-                                   'epochs': 1000,
+                                   'epochs': 100,
                                    'trainable': True,
                                    'scorer_kwargs': {
                                        'in_features': 50

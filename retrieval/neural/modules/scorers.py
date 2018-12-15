@@ -40,12 +40,12 @@ class LinearLogisticRegression(Scorer):
     def __init__(self, in_features: int):
         super().__init__()
 
-        self.linear = nn.Linear(in_features, 1, True)
+        self.linear = nn.Linear(in_features * 2 + 20, 1, True)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, document_encodings: torch.float, query_encodings: torch.float) -> torch.float:
-        batch_size = document_encodings.shape[0]
-        energies = self.linear(torch.cat([document_encodings, query_encodings], dim=1)).view(batch_size, 1)
+    def forward(self, inputs: torch.float) -> torch.float:
+        # batch_size = inputs.shape[0]
+        energies = self.linear(inputs).view(-1, 1)
         if self.training:
             return energies
         else:
