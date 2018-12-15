@@ -73,13 +73,12 @@ L2R_LEARNING_PROGRESS_PLOT = os.path.join(L2R_MODEL_DIR, 'learning_progress.pdf'
 L2R_EVAL = os.path.join(L2R_MODEL_DIR, 'trec_eval_{}.json')
 L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg_{}.json')
 
-
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 VOCAB_SIZE = 400000
 BATCH_SIZE = 256
 
 # candidate constants
-TRAIN_DEV_SPLIT = 90
+TRAIN_DEV_SPLIT = 90 if SETTING == 'dummy' else 85000
 TRAIN_NO_CANDIDATES = 10
 DEV_NO_CANDIDATES = 1000
 TRAIN_CANDIDATES_CHUNK = 1
@@ -120,7 +119,6 @@ I2E = {
     3: "MISC"
 }
 
-
 # features constants
 FEATURE_EXTRACTORS = [
     'entity',
@@ -160,6 +158,6 @@ TRANSLATION_MODEL_DIR = os.path.join(BASE_DIR, 'models', 'translation')
 IBM_MODEL = os.path.join(TRANSLATION_MODEL_DIR, f'ibm1_{SETTING}.pickle')
 
 RUN_DIR = os.path.join(L2R_MODEL_DIR, 'runs')
-RESULT_HOTPOT = os.path.join(RUN_DIR, 'hotpot.{}.' + SETTING + '.json') # format with dev|train
-RESULT_RUN_PICKLE = os.path.join(RUN_DIR, '{}.' + SETTING + '.pickle') # format with dev|train
-RESULT_RUN_JSON = os.path.join(RUN_DIR, '{}.' + SETTING + '.run') # format with dev|train
+RESULT_HOTPOT = os.path.join(RUN_DIR, 'hotpot.{}.' + SETTING + '.json')  # format with dev|train
+RESULT_RUN_PICKLE = os.path.join(RUN_DIR, '{}.' + SETTING + '.pickle')  # format with dev|train
+RESULT_RUN_JSON = os.path.join(RUN_DIR, '{}.' + SETTING + '.run')  # format with dev|train

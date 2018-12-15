@@ -19,7 +19,7 @@ from torch import nn, optim
 import torch
 from services import helpers
 
-METRICS = Tuple[Run, float, float, float, float, float, float, float]
+METRICS = Tuple[Run, float, float, float, float, float, float, float, float, float, float, float]
 random.seed(42)
 torch.random.manual_seed(42)
 numpy.random.seed(42)
@@ -139,12 +139,6 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
 
 def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_eval: str,
                     trec_eval_agg: str, save: bool) -> METRICS:
-
-    # with open(ct.INT2WID, 'rb') as file:
-    #     INT2WID = pickle.load(file)
-    # with open(ct.WID2TITLE, 'rb') as file:
-    #     WID2TITLE = pickle.load(file)
-
     model.eval()
     epoch_run = Run()
     epoch_eval = Evaluator(ref, measures=pytrec_eval.supported_measures)
@@ -170,28 +164,27 @@ def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_ev
 
         return epoch_run, acc.item(), \
                trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
-               trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100']
+               trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100'], \
+               trec_eval_agg['map_cut_1000'], trec_eval_agg['ndcg_cut_1000'], trec_eval_agg['recall_1000'], \
+               trec_eval_agg['P_5']
 
 
 def _save_epoch_stats(name: str, epoch: int, train_loss: float,
                       train_stats: Tuple[float, ...], dev_stats: Tuple[float, ...]):
-
     with open(ct.L2R_TRAIN_PROGRESS.format(name), 'a') as f:
         writer = csv.writer(f)
         writer.writerow([epoch, train_loss, *train_stats, *dev_stats])
 
-    helpers.log(f'[Epoch {epoch:03d}]\t[Train Acc:\t{train_stats[0]:0.4f}]'
-                f'[Train MAP@10:\t{train_stats[1]:0.4f}][Train NDCG@10:\t{train_stats[2]:0.4f}]'
-                # f'[Train Recall@10:\t{train_stats[3]:0.4f}]'
-                # f'[Train MAP@100:\t{train_stats[4]:0.4f}][Train NDCG@100:\t{train_stats[5]:0.4f}]'
-                # f'[Train Recall@100:\t{train_stats[6]:0.4f}]'
-                f'[Train Loss:\t{train_loss:0.4f}]'
-                )
-    helpers.log(f'[Epoch {epoch:03d}]\t[Dev Acc:\t{dev_stats[0]:0.4f}]'
-                f'[Dev MAP@10:\t{dev_stats[1]:0.4f}][Dev NDCG@10:\t{dev_stats[2]:0.4f}]'
-                f'[Dev Recall@10:\t\t{dev_stats[3]:0.4f}]'
-                f'[Dev MAP@100:\t{dev_stats[4]:0.4f}][Dev NDCG@100:\t{dev_stats[5]:0.4f}]'
-                f'[Dev Recall@100:\t\t{dev_stats[6]:0.4f}]')
+    helpers.log(f'[Epoch {epoch:03d}][Train Acc: {train_stats[0]:0.4f}]'
+                f'[Train MAP@10: {train_stats[1]:0.4f}][Train NDCG@10: {train_stats[2]:0.4f}]'
+                f'[Train Precision@5: {train_stats[10]:0.4f}]'
+                f'[Train Loss: {train_loss:0.4f}]'
+                f'[Dev Acc: {dev_stats[0]:0.4f}]'
+                f'[Dev MAP@10: {dev_stats[1]:0.4f}][Dev NDCG@10: {dev_stats[2]:0.4f}]'
+                f'[Dev Recall@10: {dev_stats[3]:0.4f}]'
+                f'[Dev MAP@100: {dev_stats[4]:0.4f}][Dev NDCG@100: {dev_stats[5]:0.4f}]'
+                f'[Dev Recall@100: {dev_stats[6]:0.4f}]'
+                f'[Dev Recall@1000: {dev_stats[9]:0.4f}]')
 
 
 def _load_checkpoint(model: nn.Module, optimizer: optim.Optimizer, config: Config):
@@ -210,7 +203,7 @@ def _load_checkpoint(model: nn.Module, optimizer: optim.Optimizer, config: Confi
 
 
 def _save_checkpoint(name: str, model: nn.Module, optimizer: optim.Optimizer, best_accuracy: float, is_best: bool,
-                        train_run: Run, dev_run: Run):
+                     train_run: Run, dev_run: Run):
     checkpoint = {
         'epoch': model.epochs_trained,
         'model': model.state_dict(),
@@ -239,4 +232,3 @@ def _save_checkpoint(name: str, model: nn.Module, optimizer: optim.Optimizer, be
 
         with open(ct.RESULT_RUN_JSON.format(name, 'dev'), 'w') as file:
             json.dump(dev_run, file)
-
