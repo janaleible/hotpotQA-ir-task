@@ -33,6 +33,8 @@ class Run(dict):
 
     def to_json(self, db, dataset_path) -> List[dict]:
 
+        raise NotImplementedError("Really shouldn't be using this!")
+
         connection = sqlite3.connect(db)
         cursor = connection.cursor()
 

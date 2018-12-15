@@ -69,6 +69,7 @@ def run(config: Config) -> None:
 
     for epoch in range(remaining_epochs):
         is_best = False
+        print(epoch, datetime.now())
         last_epoch = (model.epochs_trained + 1) == config.epochs
 
         # train
@@ -219,17 +220,18 @@ def _save_checkpoint(name: str, model: nn.Module, optimizer: optim.Optimizer, be
     }
     torch.save(checkpoint, ct.L2R_MODEL.format(name))
     if is_best:
+        print('saving new best model')
         shutil.copyfile(ct.L2R_MODEL.format(name), ct.L2R_BEST_MODEL.format(name))
 
         os.makedirs(ct.RUN_DIR.format(name), exist_ok=True)
-        with open(ct.RESULT_HOTPOT.format(name, 'train'), 'w') as file:
-            json.dump(train_run.to_json(ct.TRAIN_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
+        # with open(ct.RESULT_HOTPOT.format(name, 'train'), 'w') as file:
+        #     json.dump(train_run.to_json(ct.TRAIN_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
 
         with open(ct.RESULT_RUN_PICKLE.format(name, 'train'), 'wb') as file:
             pickle.dump(train_run, file)
 
-        with open(ct.RESULT_HOTPOT.format(name, 'dev'), 'w') as file:
-            json.dump(dev_run.to_json(ct.DEV_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
+        # with open(ct.RESULT_HOTPOT.format(name, 'dev'), 'w') as file:
+        #     json.dump(dev_run.to_json(ct.DEV_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
 
         with open(ct.RESULT_RUN_PICKLE.format(name, 'dev'), 'wb') as file:
             pickle.dump(dev_run, file)
