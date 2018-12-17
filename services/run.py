@@ -33,8 +33,6 @@ class Run(dict):
 
     def to_json(self, db, dataset_path) -> List[dict]:
 
-        raise NotImplementedError("Really shouldn't be using this!")
-
         connection = sqlite3.connect(db)
         cursor = connection.cursor()
 
@@ -53,6 +51,7 @@ class Run(dict):
                 except:
                     print(f'failed tp query db {db} with title {json.dumps(title)}, question_id {question_id}')
                     continue
+                print('found it!')
                 document_text = json.loads(document_text)
                 article = [paragraph.split(constants.EOS.strip()) for paragraph in document_text.split(constants.EOP.strip())]
                 article.insert(0, title)

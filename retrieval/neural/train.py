@@ -142,10 +142,10 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
 def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_eval: str,
                     trec_eval_agg: str, save: bool) -> METRICS:
 
-    # with open(ct.INT2WID, 'rb') as file:
-    #     INT2WID = pickle.load(file)
-    # with open(ct.WID2TITLE, 'rb') as file:
-    #     WID2TITLE = pickle.load(file)
+    with open(ct.INT2WID, 'rb') as file:
+        INT2WID = pickle.load(file)
+    with open(ct.WID2TITLE, 'rb') as file:
+        WID2TITLE = pickle.load(file)
 
     model.eval()
     epoch_run = Run()
