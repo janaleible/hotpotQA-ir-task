@@ -53,7 +53,7 @@ def run(config: Config) -> None:
 
     train_loader, dev_loader = _load_datasets()
 
-    best_acc = _load_checkpoint(model, optimizer, config)
+    best_recall_100 = _load_checkpoint(model, optimizer, config)
     remaining_epochs = config.epochs - model.epochs_trained
 
     train_stats = _evaluate_epoch(model, ct.TRAIN_TREC_REFERENCE, train_loader,
@@ -93,10 +93,10 @@ def run(config: Config) -> None:
             _save_epoch_stats(config.name, model.epochs_trained, train_loss, train_stats, dev_stats)
 
             # save model
-            if dev_stats[0] >= best_acc:
-                best_acc = dev_stats[0]
+            if dev_stats[6] >= best_recall_100:
+                best_recall_100 = dev_stats[6]
                 is_best = True
-            _save_checkpoint(config.name, model, optimizer, best_acc, is_best, train_run, dev_run)
+            _save_checkpoint(config.name, model, optimizer, best_recall_100, is_best, train_run, dev_run)
 
     return
 
@@ -128,6 +128,7 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
 
         if config.trainable:
             loss.backward()
+            # noinspection PyArgumentList
             optimizer.step()
         optimizer.zero_grad()
 
@@ -167,7 +168,7 @@ def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_ev
             else:
                 final_scores[idx * ct.BATCH_SIZE:] = scores
 
-    for batch_run in map(_build_run, parallel.chunk(10000, zip(question_ids, document_ids, final_scores.numpy()))):
+    for batch_run in parallel.execute(_build_run, parallel.chunk(10000, zip(question_ids, document_ids, final_scores.numpy()))):
         epoch_run.update_rankings(batch_run)
 
     acc = acc / len(data_loader.dataset)
@@ -176,8 +177,8 @@ def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_ev
     return epoch_run, acc.item(), \
            trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
            trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100'], \
-               trec_eval_agg['map_cut_1000'], trec_eval_agg['ndcg_cut_1000'], trec_eval_agg['recall_1000'], \
-               trec_eval_agg['P_5']
+           trec_eval_agg['map_cut_1000'], trec_eval_agg['ndcg_cut_1000'], trec_eval_agg['recall_1000'], \
+           trec_eval_agg['P_5']
 
 
 def _build_run(batch: Tuple[int, Tuple[str, int, numpy.float]]) -> Run:
@@ -209,7 +210,7 @@ def _save_epoch_stats(name: str, epoch: int, train_loss: float,
 
 
 def _load_checkpoint(model: nn.Module, optimizer: optim.Optimizer, config: Config):
-    best_acc = 0
+    best_statistic = 0
     start = datetime.now()
     if os.path.isfile(ct.L2R_TRAIN_PROGRESS.format(config.name)):
         with open(ct.L2R_MODEL.format(config.name), 'rb') as file:
@@ -218,18 +219,18 @@ def _load_checkpoint(model: nn.Module, optimizer: optim.Optimizer, config: Confi
         optimizer.load_state_dict(checkpoint['optimizer'])
         model.epochs_trained = checkpoint['epoch']
 
-        best_acc = checkpoint['best_accuracy']
+        best_statistic = checkpoint['best_statistic']
         helpers.log(f'Loaded checkpoint from {ct.L2R_MODEL.format(config.name)} in {datetime.now() - start}.')
-    return best_acc
+    return best_statistic
 
 
-def _save_checkpoint(name: str, model: nn.Module, optimizer: optim.Optimizer, best_accuracy: float, is_best: bool,
+def _save_checkpoint(name: str, model: nn.Module, optimizer: optim.Optimizer, best_statistic: float, is_best: bool,
                      train_run: Run, dev_run: Run):
     checkpoint = {
         'epoch': model.epochs_trained,
         'model': model.state_dict(),
         'optimizer': optimizer.state_dict(),
-        'best_accuracy': best_accuracy
+        'best_statistic': best_statistic
     }
     torch.save(checkpoint, ct.L2R_MODEL.format(name))
     if is_best:
