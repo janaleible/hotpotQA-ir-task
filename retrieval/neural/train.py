@@ -105,9 +105,9 @@ def _load_datasets():
     train_dataset = QueryDocumentsDataset(ct.TRAIN_FEATURES_DB)
     dev_dataset = QueryDocumentsDataset(ct.DEV_FEATURES_DB)
     train_loader = DataLoader(train_dataset, ct.BATCH_SIZE, True, pin_memory=True,
-                              collate_fn=QueryDocumentsDataset.collate, num_workers=8)
+                              collate_fn=QueryDocumentsDataset.collate, num_workers=os.cpu_count())
     dev_loader = DataLoader(dev_dataset, ct.BATCH_SIZE, True, pin_memory=True,
-                            collate_fn=QueryDocumentsDataset.collate, num_workers=8)
+                            collate_fn=QueryDocumentsDataset.collate, num_workers=os.cpu_count())
 
     return train_loader, dev_loader
 
