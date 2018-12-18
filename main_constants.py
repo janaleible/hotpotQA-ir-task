@@ -4,12 +4,14 @@ import torch
 # use tmp dir on cluster, project root locally
 
 BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) else '.')
+HOME_DIR = (os.environ['HOME'] if (os.environ.get('SLURM_JOBID') is not None) else '.')
 
 # switch between dummy and full data setting
 # SETTING = 'full'
 SETTING = 'dummy'
 
 GRAND_BATCH_SIZE = 10000
+# GRAND_BATCH_SIZE = 10
 THREAD_NO = 2
 PROCESS_CONTEXT = 'fork'
 
@@ -65,7 +67,7 @@ EMBEDDINGS_200 = os.path.join(EMBEDDINGS_DIR, 'glove.6B.200d.npz')
 EMBEDDINGS_300 = os.path.join(EMBEDDINGS_DIR, 'glove.6B.300d.npz')
 
 # model constants
-L2R_MODEL_DIR = os.path.join(BASE_DIR, 'models', '{}')
+L2R_MODEL_DIR = os.path.join(HOME_DIR, 'models', '{}') # Make sure models are saved to permanent storage during training
 L2R_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint.pt')
 L2R_BEST_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint_best.pt')
 L2R_TRAIN_PROGRESS = os.path.join(L2R_MODEL_DIR, 'learning_progress.csv')
@@ -75,7 +77,7 @@ L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg_{}.json')
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 VOCAB_SIZE = 400000
-BATCH_SIZE = 256
+BATCH_SIZE = 2048
 
 # candidate constants
 TRAIN_DEV_SPLIT = 90 if SETTING == 'dummy' else 85000

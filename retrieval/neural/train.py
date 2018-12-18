@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 import main_constants as ct
 from torch import nn, optim
 import torch
-from services import helpers
+from services import helpers, parallel
 
 METRICS = Tuple[Run, float, float, float, float, float, float, float, float, float, float, float]
 random.seed(42)
@@ -121,8 +121,9 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
         questions = questions.to(device=ct.DEVICE, non_blocking=True)
         documents = documents.to(device=ct.DEVICE, non_blocking=True)
         targets = targets.to(device=ct.DEVICE, non_blocking=True)
+        features = features.to(device=ct.DEVICE, non_blocking=True)
 
-        scores = model(questions, documents)
+        scores = model(questions, documents, features)
         loss = model.criterion(scores, targets)
 
         if config.trainable:
@@ -143,30 +144,50 @@ def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_ev
     epoch_run = Run()
     epoch_eval = Evaluator(ref, measures=pytrec_eval.supported_measures)
     acc = 0
+
+    final_scores = torch.empty((len(data_loader.dataset), 1), dtype=torch.float)
+    question_ids = []
+    document_ids = []
     with torch.no_grad():
         for idx, batch in enumerate(data_loader):
-            (questions, documents, features, targets, question_ids, document_ids) = batch
+            (questions, documents, features, targets, batch_question_ids, batch_document_ids) = batch
             questions = questions.to(device=ct.DEVICE, non_blocking=True)
             documents = documents.to(device=ct.DEVICE, non_blocking=True)
+            features = features.to(device=ct.DEVICE, non_blocking=True)
             targets = targets.to(device=ct.DEVICE, non_blocking=True)
 
-            scores = model(questions, documents)
-
-            for i in range(len(questions)):
-                question_id = question_ids[i]
-                document_id = document_ids[i]
-                title = WID2TITLE[INT2WID[document_id]]
-                epoch_run.update_ranking(question_id, title, scores[i].item())
+            batch_size = questions.shape[0]
+            scores = model(questions, documents, features)
             acc += torch.sum((torch.round(scores) == targets).to(dtype=torch.float))
 
-        acc = acc / len(data_loader.dataset)
-        _, trec_eval_agg = epoch_eval.evaluate(epoch_run, trec_eval, trec_eval_agg, save)
+            question_ids.extend(batch_question_ids)
+            document_ids.extend(batch_document_ids)
+            if batch_size == ct.BATCH_SIZE:
+                final_scores[idx * ct.BATCH_SIZE:(idx + 1) * ct.BATCH_SIZE] = scores
+            else:
+                final_scores[idx * ct.BATCH_SIZE:] = scores
 
-        return epoch_run, acc.item(), \
-               trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
-               trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100'], \
+    for batch_run in map(_build_run, parallel.chunk(10000, zip(question_ids, document_ids, final_scores.numpy()))):
+        epoch_run.update_rankings(batch_run)
+
+    acc = acc / len(data_loader.dataset)
+    _, trec_eval_agg = epoch_eval.evaluate(epoch_run, trec_eval, trec_eval_agg, save)
+
+    return epoch_run, acc.item(), \
+           trec_eval_agg['map_cut_10'], trec_eval_agg['ndcg_cut_10'], trec_eval_agg['recall_10'], \
+           trec_eval_agg['map_cut_100'], trec_eval_agg['ndcg_cut_100'], trec_eval_agg['recall_100'], \
                trec_eval_agg['map_cut_1000'], trec_eval_agg['ndcg_cut_1000'], trec_eval_agg['recall_1000'], \
                trec_eval_agg['P_5']
+
+
+def _build_run(batch: Tuple[int, Tuple[str, int, numpy.float]]) -> Run:
+    batch_run = Run()
+    idx, batch = batch
+    for i, (question_id, document_id, score) in enumerate(batch):
+        title = WID2TITLE[INT2WID[document_id]]
+        batch_run.update_ranking(question_id, title, score.item())
+
+    return batch_run
 
 
 def _save_epoch_stats(name: str, epoch: int, train_loss: float,
@@ -213,22 +234,18 @@ def _save_checkpoint(name: str, model: nn.Module, optimizer: optim.Optimizer, be
     torch.save(checkpoint, ct.L2R_MODEL.format(name))
     if is_best:
         shutil.copyfile(ct.L2R_MODEL.format(name), ct.L2R_BEST_MODEL.format(name))
-
         os.makedirs(ct.RUN_DIR.format(name), exist_ok=True)
-        with open(ct.RESULT_HOTPOT.format(name, 'train'), 'w') as file:
-            json.dump(train_run.to_json(ct.TRAIN_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
+
+        # with open(ct.RESULT_HOTPOT.format(name, 'train'), 'w') as file:
+        #     json.dump(train_run.to_json(ct.TRAIN_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
+        # with open(ct.RESULT_HOTPOT.format(name, 'dev'), 'w') as file:
+        #     json.dump(dev_run.to_json(ct.DEV_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
 
         with open(ct.RESULT_RUN_PICKLE.format(name, 'train'), 'wb') as file:
             pickle.dump(train_run, file)
-
-        with open(ct.RESULT_HOTPOT.format(name, 'dev'), 'w') as file:
-            json.dump(dev_run.to_json(ct.DEV_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file)
-
         with open(ct.RESULT_RUN_PICKLE.format(name, 'dev'), 'wb') as file:
             pickle.dump(dev_run, file)
-
         with open(ct.RESULT_RUN_JSON.format(name, 'train'), 'w') as file:
             json.dump(train_run, file)
-
         with open(ct.RESULT_RUN_JSON.format(name, 'dev'), 'w') as file:
             json.dump(dev_run, file)

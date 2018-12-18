@@ -11,7 +11,6 @@ class Run(dict):
         self[_id] = ranking
 
     def update_ranking(self, question_id: str, document_title: str, score: float) -> None:
-        # if not self.get(question_id, {}):
         if question_id not in self:
             self[question_id] = {}
 
@@ -22,7 +21,7 @@ class Run(dict):
 
     def update_rankings(self, rankings: Dict[str, Dict[str, float]]) -> None:
         for _id in rankings.keys():
-            if self.get(_id, {}):
+            if _id in self:
                 self[_id].update(rankings[_id])
             else:
                 self[_id] = rankings[_id]
@@ -51,6 +50,7 @@ class Run(dict):
                 except:
                     print(f'failed tp query db {db} with title {json.dumps(title)}, question_id {question_id}')
                     continue
+                print('found it!')
                 document_text = json.loads(document_text)
                 article = [paragraph.split(constants.EOS.strip()) for paragraph in document_text.split(constants.EOP.strip())]
                 article.insert(0, title)

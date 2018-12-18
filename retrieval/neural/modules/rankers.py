@@ -20,7 +20,7 @@ class Ranker(nn.Module):
         self.scorer = scorer
 
     @abstractmethod
-    def forward(self, query: torch.tensor, document: torch.tensor):
+    def forward(self, query: torch.tensor, document: torch.tensor, features: torch.tensor):
         raise NotImplementedError
 
 
@@ -32,10 +32,10 @@ class Pointwise(Ranker):
         self.weight = 1.0
         self.criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.weight])).to(device=const.DEVICE)
 
-    def forward(self, query: torch.tensor, document: torch.tensor) -> torch.tensor:
+    def forward(self, query: torch.tensor, document: torch.tensor, features: torch.tensor) -> torch.tensor:
         query_hns = self.query_encoder(query)
         document_hns = self.document_encoder(document)
 
-        score = self.scorer(document_hns, query_hns)
+        score = self.scorer(document_hns, query_hns, features)
 
         return score
