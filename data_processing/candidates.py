@@ -90,15 +90,16 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
         # store relevant documents row
         rows: List[List[str]] = []
         relevant_doc_iids = set(INDEX.wid2int[INDEX.title2wid[title]] for title in relevant_titles)
-        for (candidate_idx, doc_iid) in enumerate(relevant_doc_iids):
-            row: List[str] = [json.dumps(_id), json.dumps(_type), json.dumps(_level)]
-            doc_wid, doc_title = _extract_doc_identifiers(row, INDEX, doc_iid)
-            doc_text = _extract_text(row, _str, doc_wid)
-            doc_tokens, question_tokens = _extract_tokens(row, INDEX, _str, doc_iid)
-            tfidf_score = _extract_tfidf_score(row, INDEX, doc_tokens, question_tokens)
-            relevance = _extract_relevance(row, doc_iid, relevant_doc_iids)
+        if split != 'test':
+            for (candidate_idx, doc_iid) in enumerate(relevant_doc_iids):
+                row: List[str] = [json.dumps(_id), json.dumps(_type), json.dumps(_level)]
+                doc_wid, doc_title = _extract_doc_identifiers(row, INDEX, doc_iid)
+                doc_text = _extract_text(row, _str, doc_wid)
+                doc_tokens, question_tokens = _extract_tokens(row, INDEX, _str, doc_iid)
+                tfidf_score = _extract_tfidf_score(row, INDEX, doc_tokens, question_tokens)
+                relevance = _extract_relevance(row, doc_iid, relevant_doc_iids)
 
-            rows.append(row)
+                rows.append(row)
 
         # store irrelevant documents row in order scored by tf-idf until reached candidate_set length
         result_idx = 0
