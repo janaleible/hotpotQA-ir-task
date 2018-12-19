@@ -35,8 +35,6 @@ class QueryDocumentsDataset(data.Dataset):
         """Returns query, document, relevance"""
         row = [json.loads(entry) for entry in self.data[item]]
 
-        average_tfidf = 132.53154467012513
-        stdev_tfidf = 48.78475297356902
 
         question_id = row[0]
         document_id = row[1]
@@ -45,12 +43,55 @@ class QueryDocumentsDataset(data.Dataset):
         features = row[4:24]
         target = row[24]
 
-        features[0] = (features[0] - average_tfidf) / stdev_tfidf # standardize tfidf, sorry!
+        min_tfidf = 0
+        max_tfidf = 2544.1113472397183
+        features[0] = self.normalize(features[0], min_tfidf, max_tfidf)
+
+        min_ent_PER = 0
+        max_ent_PER = 4
+        features[1] = self.normalize(features[1], min_ent_PER, max_ent_PER)
+
+        min_ent_LOC = 0
+        max_ent_LOC = 4
+        features[2] = self.normalize(features[2], min_ent_LOC, max_ent_LOC)
+
+        min_ent_ORG = 0
+        max_ent_ORG = 4
+        features[3] = self.normalize(features[3], min_ent_ORG, max_ent_ORG)
+
+        min_ent_MISC = 0
+        max_ent_MISC = 5
+        features[4] = self.normalize(features[4], min_ent_MISC, max_ent_MISC)
+
+        min_ibm1 = 0
+        max_ibm2 = 0.009390061985520014
+        features[5] = self.normalize(features[5], min_ibm1, max_ibm2)
+
+        min_nibm1 = 0
+        max_nibm2 = 0.0023475154963800036
+        features[6] = self.normalize(features[6], min_nibm1, max_nibm2)
+
+        min_bigram = 0
+        max_bigram = 81
+        features[7] = self.normalize(features[7], min_bigram, max_bigram)
+
+        min_nbigram = 0
+        max_nbigram = 0.9655172413793104
+        features[8] = self.normalize(features[8], min_nbigram, max_nbigram)
+
+        # skip one-hot encoded question words
+
+        min_doclen = 1
+        max_doclen = 1488
+        features[19] = self.normalize(features[19], min_doclen, max_doclen)
 
         question = self._filter(question)
         document = self._filter(document)
 
         return question, document, features, target, question_id, document_id
+
+    def normalize(self, value, min, max):
+        return (value - min) / (max - min)
 
     def _filter(self, _ids: List[int]):
         return list(map(lambda _id: _id if _id < const.VOCAB_SIZE else 0, _ids))
