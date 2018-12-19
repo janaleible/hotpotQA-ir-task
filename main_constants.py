@@ -98,6 +98,7 @@ CANDIDATE_COLUMNS = ['question_id', 'type', 'level', 'doc_iid', 'doc_wid', 'doc_
 # reference constants
 TRAIN_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'train_{SETTING}_reference.json')
 DEV_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'dev_{SETTING}_reference.json')
+TEST_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'test_{SETTING}_reference.json')
 
 # entity recognition constants
 E2I = {

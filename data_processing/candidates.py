@@ -14,10 +14,13 @@ from services.index import Index
 INDEX: Index
 COLUMNS = ct.CANDIDATE_COLUMNS
 QUESTION_COUNTS: Dict[str, int]
+SKIP_RELEVANT: bool
 
 
-def build():
+def build(skip_relevant: bool = True):
     global INDEX, COLUMNS, QUESTION_COUNTS
+    global SKIP_RELEVANT
+    SKIP_RELEVANT = skip_relevant
     INDEX = Index('tfidf')
     helpers.log('Loaded index.')
 
@@ -110,7 +113,7 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
 
             row: List[str] = [json.dumps(_id), json.dumps(_type), json.dumps(_level)]
             relevance = _extract_relevance(row, doc_iid, relevant_doc_iids, False)
-            if relevance == 1:
+            if relevance == 1 and SKIP_RELEVANT:
                 result_idx += 1
                 continue
 

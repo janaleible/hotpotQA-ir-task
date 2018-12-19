@@ -10,7 +10,9 @@ def build() -> None:
         question_set = json.load(file)
         dev_question_set = question_set[ct.TRAIN_DEV_SPLIT:]
         train_question_set = question_set[:ct.TRAIN_DEV_SPLIT]
-    iterator = [('train', train_question_set), ('dev', dev_question_set)]
+    with open(ct.DEV_HOTPOT_SET, 'r') as file:
+        test_question_set = json.load(file)
+    iterator = [('train', train_question_set), ('dev', dev_question_set), ('test', test_question_set)]
     for _set, reference in parallel.execute(_build_reference, iterator):
         helpers.log(f'Created reference {reference} for {_set} set.')
 
@@ -25,6 +27,8 @@ def _build_reference(question_set: List[Any]) -> Tuple[str, str]:
         reference_path = ct.TRAIN_TREC_REFERENCE
     elif _set == 'dev':
         reference_path = ct.DEV_TREC_REFERENCE
+    elif _set == 'test':
+        reference_path = ct.TEST_TREC_REFERENCE
     else:
         raise ValueError('Unknown trec reference.')
 
