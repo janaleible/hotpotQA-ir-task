@@ -60,7 +60,7 @@ models = {
                                       'ranker': Pointwise,
                                       'optimizer': Adam,
                                       'embedding_dim': 50,
-                                      'epochs': 200,
+                                      'epochs': 100,
                                       'trainable': True,
                                       'scorer_kwargs': {
                                           'in_features': 50 * 2 + 20
@@ -76,7 +76,7 @@ models = {
                                             'ranker': Pointwise,
                                             'optimizer': Adam,
                                             'embedding_dim': 50,
-                                            'epochs': 200,
+                                            'epochs': 100,
                                             'trainable': True,
                                             'scorer_kwargs': {
                                                 'in_features': 50 * 2
@@ -92,7 +92,7 @@ models = {
                                           'ranker': Pointwise,
                                           'optimizer': Adam,
                                           'embedding_dim': 50,
-                                          'epochs': 200,
+                                          'epochs': 100,
                                           'trainable': True,
                                           'scorer_kwargs': {
                                               'in_features': 20
@@ -108,7 +108,7 @@ models = {
                             'ranker': Pointwise,
                             'optimizer': Adam,
                             'embedding_dim': 50,
-                            'epochs': 200,
+                            'epochs': 100,
                             'trainable': True,
                             'scorer_kwargs': {
                                 'in_features': 50 * 2
@@ -123,7 +123,7 @@ models = {
                                   'ranker': Pointwise,
                                   'optimizer': Adam,
                                   'embedding_dim': 50,
-                                  'epochs': 200,
+                                  'epochs': 100,
                                   'trainable': True,
                                   'scorer_kwargs': {
                                       'in_features': 50 * 2
@@ -138,7 +138,7 @@ models = {
                                   'ranker': Pointwise,
                                   'optimizer': Adam,
                                   'embedding_dim': 50,
-                                  'epochs': 200,
+                                  'epochs': 100,
                                   'trainable': True,
                                   'scorer_kwargs': {
                                       'in_features': 50 * 2
@@ -154,7 +154,7 @@ models = {
                                    'ranker': Pointwise,
                                    'optimizer': Adam,
                                    'embedding_dim': 50,
-                                   'epochs': 200,
+                                   'epochs': 100,
                                    'trainable': True,
                                    'scorer_kwargs': {
                                        'in_features': 50 * 2
