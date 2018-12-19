@@ -83,20 +83,13 @@ BATCH_SIZE = 2048
 TRAIN_DEV_SPLIT = 90 if SETTING == 'dummy' else 85000
 TRAIN_NO_CANDIDATES = 10
 DEV_NO_CANDIDATES = 1000
-TRAIN_CANDIDATES_CHUNK = 1
-DEV_CANDIDATES_CHUNK = 1
+TEST_NO_CANDIDATES = 1000
+CANDIDATES_CHUNK = 1
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
 
 TRAIN_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.sqlite')
-# TRAIN_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.pickle')
-TRAIN_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
-
 DEV_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.sqlite')
-# DEV_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.pickle')
-DEV_CANDIDATES_PICKLE = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')
-
-# TRAIN_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
-# DEV_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')
+TEST_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.test.{SETTING}.sqlite')
 
 CANDIDATES_TABLE_NAME = 'candidates'
 CANDIDATE_COLUMNS = ['question_id', 'type', 'level', 'doc_iid', 'doc_wid', 'doc_title',
@@ -151,10 +144,9 @@ DEV_FEATURES_CHUNK = 100
 FEATURES_DIR = os.path.join(BASE_DIR, 'data', 'features')
 
 TRAIN_FEATURES_DB = os.path.join(FEATURES_DIR, f'train.{SETTING}.feature.db')
-TRAIN_FEATURES_PICKLE = os.path.join(FEATURES_DIR, f'train.{SETTING}.pickle')
-
 DEV_FEATURES_DB = os.path.join(FEATURES_DIR, f'dev.{SETTING}.feature.db')
-DEV_FEATURES_PICKLE = os.path.join(FEATURES_DIR, f'dev.{SETTING}.feature.pickle')
+TEST_FEATURES_DB = os.path.join(FEATURES_DIR, f'test.{SETTING}.feature.db')
+
 
 TRANSLATION_MODEL_DIR = os.path.join(BASE_DIR, 'models', 'translation')
 IBM_MODEL = os.path.join(TRANSLATION_MODEL_DIR, f'ibm1_{SETTING}.pickle')

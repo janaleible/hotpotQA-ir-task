@@ -26,10 +26,13 @@ def build():
         question_set = json.load(file)
         train_question_set = question_set[:ct.TRAIN_DEV_SPLIT]
         dev_question_set = question_set[ct.TRAIN_DEV_SPLIT:]
+    with open(ct.DEV_HOTPOT_SET, 'r') as file:
+        test_question_set = json.load(file)
 
     iterator: List[Tuple[str, str, Callable]] = [
-        (train_question_set, 'train', ct.TRAIN_CANDIDATES_DB, ct.TRAIN_CANDIDATES_CHUNK),
-        (dev_question_set, 'dev', ct.DEV_CANDIDATES_DB, ct.DEV_CANDIDATES_CHUNK)
+        # (train_question_set, 'train', ct.TRAIN_CANDIDATES_DB, ct.CANDIDATES_CHUNK),
+        # (dev_question_set, 'dev', ct.DEV_CANDIDATES_DB, ct.CANDIDATES_CHUNK),
+        (test_question_set, 'test', ct.TEST_CANDIDATES_DB, ct.CANDIDATES_CHUNK)
     ]
 
     for (_set, split, candidate_db_path, chunk) in iterator:
@@ -68,6 +71,9 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
         elif split == 'dev':
             no_candidates = ct.DEV_NO_CANDIDATES
             candidate_db_path = ct.DEV_CANDIDATES_DB
+        elif split == 'test':
+            no_candidates = ct.TEST_NO_CANDIDATES
+            candidate_db_path = ct.TEST_CANDIDATES_DB
         else:
             raise ValueError(f'Unknown set {split}.')
 
