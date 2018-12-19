@@ -34,7 +34,6 @@ class QueryDocumentsDataset(data.Dataset):
         """Returns query, document, relevance"""
         row = [json.loads(entry) for entry in self.data[item]]
 
-
         question_id = row[0]
         document_id = row[1]
         question = row[2]
@@ -89,8 +88,8 @@ class QueryDocumentsDataset(data.Dataset):
 
         return question, document, features, target, question_id, document_id
 
-    def normalize(self, value, min, max):
-        return (value - min) / (max - min)
+    def normalize(self, value, _min, _max):
+        return (value - _min) / (_max - _min)
 
     def _filter(self, _ids: List[int]):
         return list(map(lambda _id: _id if _id < const.VOCAB_SIZE else 0, _ids))
