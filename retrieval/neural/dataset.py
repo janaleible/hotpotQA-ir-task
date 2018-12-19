@@ -28,11 +28,15 @@ class QueryDocumentsDataset(data.Dataset):
 
         self.data = cursor.execute(f'SELECT {", ".join(self._features)} FROM features').fetchall()
 
+
         helpers.log(f'Initialized {database.split(".")[-3]} dataset in {datetime.now() - start}')
 
     def __getitem__(self, item: int) -> Tuple[List[int], List[int], List[float], int, str, int]:
         """Returns query, document, relevance"""
         row = [json.loads(entry) for entry in self.data[item]]
+
+        average_tfidf = 132.53154467012513
+        stdev_tfidf = 48.78475297356902
 
         question_id = row[0]
         document_id = row[1]
@@ -40,6 +44,8 @@ class QueryDocumentsDataset(data.Dataset):
         document = row[3]
         features = row[4:24]
         target = row[24]
+
+        features[0] = (features[0] - average_tfidf) / stdev_tfidf # standardize tfidf, sorry!
 
         question = self._filter(question)
         document = self._filter(document)
