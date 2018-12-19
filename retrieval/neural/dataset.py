@@ -17,8 +17,8 @@ class QueryDocumentsDataset(data.Dataset):
     cut_off: int
 
     _features = ['query_id', 'doc_id', 'query_tokens', 'doc_tokens', 'tfidf', 'entity_match_PER', 'entity_match_LOC',
-        'entity_match_ORG', 'entity_match_MISC', 'ibm1', 'nibm1', 'bigram', 'nbigram', 'qwhat', 'qwhich', 'qwho', 'qin',
-        'qare', 'qis', 'qwas', 'qwhen', 'qwhere', 'qhow', 'doclen', 'relevant']
+                 'entity_match_ORG', 'entity_match_MISC', 'ibm1', 'nibm1', 'bigram', 'nbigram', 'qwhat', 'qwhich',
+                 'qwho', 'qin', 'qare', 'qis', 'qwas', 'qwhen', 'qwhere', 'qhow', 'doclen', 'relevant']
 
     def __init__(self, database: str):
         start = datetime.now()
@@ -27,7 +27,6 @@ class QueryDocumentsDataset(data.Dataset):
         cursor = connection.cursor()
 
         self.data = cursor.execute(f'SELECT {", ".join(self._features)} FROM features').fetchall()
-
 
         helpers.log(f'Initialized {database.split(".")[-3]} dataset in {datetime.now() - start}')
 
@@ -97,8 +96,8 @@ class QueryDocumentsDataset(data.Dataset):
         return list(map(lambda _id: _id if _id < const.VOCAB_SIZE else 0, _ids))
 
     @staticmethod
-    def collate(batch: Tuple[Any]) -> Tuple[torch.tensor, torch.tensor, torch.tensor, torch.tensor, List[str], List[int]]:
-
+    def collate(batch: Tuple[Any]) -> Tuple[
+        torch.tensor, torch.tensor, torch.tensor, torch.tensor, List[str], List[int]]:
         queries, documents, features, targets, question_ids, document_ids = list(zip(*batch))
 
         max_query_length = max(map(lambda query: len(query), queries))
