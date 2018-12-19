@@ -8,8 +8,7 @@ from abc import abstractmethod
 class Scorer(nn.Module):
 
     @abstractmethod
-    def forward(self, document_encodings: torch.tensor, query_encodings: torch.tensor,
-                features: torch.tensor) -> torch.tensor:
+    def forward(self, *inputs: List[torch.tensor]) -> torch.tensor:
         raise NotImplementedError
 
 

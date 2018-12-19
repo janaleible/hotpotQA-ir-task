@@ -2,8 +2,11 @@ import json
 import sqlite3
 from typing import Dict, List
 
+from tqdm import tqdm
+
 import main_constants as constants
 from retrieval.term.dataset import Dataset
+from services import helpers
 
 
 class Run(dict):
@@ -31,43 +34,39 @@ class Run(dict):
             json.dump(self, file)
 
     def to_json(self, db, dataset_path) -> List[dict]:
+        helpers.log('Creating hotpot data.')
+        dataset = Dataset.from_file(dataset_path)
+        questions = []
 
         connection = sqlite3.connect(db)
         cursor = connection.cursor()
+        doc_results = cursor.execute(f"SELECT DISTINCT doc_title, document_text FROM features").fetchall()
+        title2text = {json.loads(doc_title): json.loads(doc_text) for (doc_title, doc_text) in doc_results}
+        cursor.close()
+        connection.close()
+        helpers.log('Loaded title2text.')
 
-        questions = []
-
-        dataset = Dataset.from_file(dataset_path)
-
-        for question_id, ranking in self.items():
-
+        for question_id, ranking in tqdm(self.items()):
             context = []
             sorted_by_score = sorted(ranking.items(), key=lambda value: value[1], reverse=True)
             for rank in range(min(10, len(ranking))):
                 (title, score) = sorted_by_score[rank]
-                try:
-                    (document_text,) = cursor.execute(f"SELECT document_text FROM features WHERE doc_title = ? LIMIT 1", [json.dumps(title)]).fetchone()
-                except:
-                    print(f'failed tp query db {db} with title {json.dumps(title)}, question_id {question_id}')
-                    continue
-                print('found it!')
-                document_text = json.loads(document_text)
-                article = [paragraph.split(constants.EOS.strip()) for paragraph in document_text.split(constants.EOP.strip())]
+                doc_text = title2text[title]
+                article = [paragraph.split(constants.EOS.strip()) for paragraph in
+                           doc_text.split(constants.EOP.strip())]
                 article.insert(0, title)
                 context.append(article)
 
             full_question = dataset.find_by_id(question_id)
-
             question = {
                 '_id': full_question.id,
                 'level': full_question.level,
                 'type': full_question.type,
                 'question': full_question.question,
                 'context': context,
-                'anwer': full_question.answer,
+                'answer': full_question.answer,
                 'supporting_facts': full_question.supporting_facts
             }
-
             questions.append(question)
 
         return questions
