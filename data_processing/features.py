@@ -25,6 +25,8 @@ def rows_to_db(_set: str, rows: List[Any]):
         db_path = constants.TRAIN_FEATURES_DB
     elif _set == 'dev':
         db_path = constants.DEV_FEATURES_DB
+    elif _set == 'test':
+        db_path = constants.TEST_FEATURES_DB
     else:
         raise ValueError(f'Unknown set. {_set}')
     done = False

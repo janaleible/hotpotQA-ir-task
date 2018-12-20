@@ -113,7 +113,7 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
 
             row: List[str] = [json.dumps(_id), json.dumps(_type), json.dumps(_level)]
             relevance = _extract_relevance(row, doc_iid, relevant_doc_iids, False)
-            if relevance == 1 and SKIP_RELEVANT:
+            if relevance == 1 and not SKIP_RELEVANT:
                 result_idx += 1
                 continue
 
