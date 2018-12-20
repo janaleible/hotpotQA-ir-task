@@ -75,8 +75,9 @@ def build():
 
     os.makedirs(constants.FEATURES_DIR, exist_ok=True)
     iterator: List[Tuple[str, str, Callable]] = [
-        (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_DB, constants.TRAIN_FEATURES_CHUNK),
-        (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_DB, constants.DEV_FEATURES_CHUNK)
+        # (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_DB, constants.TRAIN_FEATURES_CHUNK),
+        # (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_DB, constants.DEV_FEATURES_CHUNK),
+        (constants.TEST_CANDIDATES_DB, constants.TEST_FEATURES_DB, constants.TEST_FEATURES_CHUNK)
     ]
 
     for (candidate_db_path, feature_db_path, chunk) in iterator:
@@ -86,8 +87,6 @@ def build():
         cursor = candidate_db.cursor()
         start = 1  # first id in the database
         (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
-        if _set == 'dev' and constants.SETTING == 'full':
-            stop = 1000000  # truncate dev set
         cursor.close()
         candidate_db.close()
         id_range = range(start, stop + 1)
@@ -130,6 +129,8 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
             candidate_db_path = constants.TRAIN_CANDIDATES_DB
         elif _set == 'dev':
             candidate_db_path = constants.DEV_CANDIDATES_DB
+        elif _set == 'test':
+            candidate_db_path = constants.TEST_CANDIDATES_DB
         else:
             raise ValueError(f'Unknown dataset {_set}.')
         done = False
