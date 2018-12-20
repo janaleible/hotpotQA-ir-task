@@ -134,13 +134,17 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
 
         if _set == 'train':
             candidate_db_path = constants.TRAIN_CANDIDATES_DB
+            feature_db_path = constants.TRAIN_FEATURES_DB
         elif _set == 'dev':
             candidate_db_path = constants.DEV_CANDIDATES_DB
+            feature_db_path = constants.DEV_FEATURES_DB
         elif _set == 'test':
             candidate_db_path = constants.TEST_CANDIDATES_DB
+            feature_db_path = constants.TEST_FEATURES_DB
         else:
             raise ValueError(f'Unknown dataset {_set}.')
         done = False
+        candidate_rows = []
         while not done:
             try:
                 candidate_db = sqlite3.connect(candidate_db_path)
@@ -154,9 +158,14 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
 
         batch_count = 0
         rows = []
+        feature_db = sqlite3.connect(feature_db_path)
+        cursor = feature_db.cursor()
         for candidate_row in candidate_rows:
             (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
              question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
+            (exists,) = cursor.execute('SELECT id FROM features WHERE id = ?', (_id,)).fetchone()
+            if exists is None:
+                continue
 
             row: List[str] = [_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
                               question_text, doc_text, question_tokens, doc_tokens, tfidf]
