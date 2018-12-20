@@ -102,6 +102,7 @@ def build():
         start = start if start is not None else 0  # first id in the database
         cursor.close()
         feature_db.close()
+        helpers.log(f'Starting feature build at {start}.')
 
         candidate_db = sqlite3.connect(candidate_db_path)
         cursor = candidate_db.cursor()
