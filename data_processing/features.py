@@ -159,7 +159,7 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
             (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
              question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
             exists = feature_cursor.execute('SELECT id FROM features WHERE id = ?', (_id,)).fetchone()
-            if exists is None:
+            if exists is not None:
                 continue
 
             row: List[str] = [_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
