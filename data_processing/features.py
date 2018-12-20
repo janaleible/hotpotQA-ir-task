@@ -109,7 +109,7 @@ def build():
 
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
-        _batched_set_generator = parallel.chunk(constants.GRAND_BATCH_SIZE, _set_generator)
+        _batched_set_generator = parallel.chunk(constants.GRAND_CHUNK, _set_generator)
         for grand_batch_idx, _batch_set in _batched_set_generator:
             grand_batch_count = 0
             for batch_count in parallel.execute(_build_candidates, _batch_set, _as='process'):
