@@ -144,26 +144,21 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
         else:
             raise ValueError(f'Unknown dataset {_set}.')
         done = False
-        candidate_rows = []
-        while not done:
-            try:
-                candidate_db = sqlite3.connect(candidate_db_path)
-                cursor = candidate_db.cursor()
-                candidate_rows = cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
-                cursor.close()
-                candidate_db.close()
-                done = True
-            except Exception as e:
-                helpers.log(e)
+
+        candidate_db = sqlite3.connect(candidate_db_path)
+        candidate_cursor = candidate_db.cursor()
+        candidate_rows = candidate_cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
+        candidate_cursor.close()
+        candidate_db.close()
 
         batch_count = 0
         rows = []
         feature_db = sqlite3.connect(feature_db_path)
-        cursor = feature_db.cursor()
+        feature_cursor = feature_db.cursor()
         for candidate_row in candidate_rows:
             (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
              question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
-            (exists,) = cursor.execute('SELECT id FROM features WHERE id = ?', (_id,)).fetchone()
+            (exists,) = feature_cursor.execute('SELECT id FROM features WHERE id = ?', (_id,)).fetchone()
             if exists is None:
                 continue
 
@@ -175,6 +170,9 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
             batch_count += 1
         rows_to_db(_set, rows)
         helpers.log(f'Processed batch {batch_index} of {batch_count} pairs in {datetime.now() - start_time}')
+
+        feature_cursor.close()
+        feature_db.close()
 
         return batch_count
     except Exception as e:
