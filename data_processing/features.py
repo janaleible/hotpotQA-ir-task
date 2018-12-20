@@ -85,27 +85,31 @@ def build():
     for (candidate_db_path, feature_db_path, chunk) in iterator:
         start_time = datetime.now()
         _set = candidate_db_path.split("/")[-1].split(".")[1]
+
+        done = False
+        feature_db = sqlite3.connect(feature_db_path)
+        cursor = feature_db.cursor()
+        while not done:
+            try:
+                cursor.execute(sql.create_features_table(COLUMNS))
+                feature_db.commit()
+                done = True
+            except Exception as e:
+                helpers.log(e)
+        helpers.log(f'Created {_set} features table.')
+
+        (start,) = cursor.execute('SELECT MAX(id) FROM features').fetchone()
+        start = start if start is not None else 0  # first id in the database
+        cursor.close()
+        feature_db.close()
+
         candidate_db = sqlite3.connect(candidate_db_path)
         cursor = candidate_db.cursor()
-        start = 1  # first id in the database
         (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
         cursor.close()
         candidate_db.close()
-        id_range = range(start, stop + 1)
+        id_range = range(start + 1, stop + 1)
         helpers.log(f'Retrieved {len(id_range)} candidate indices for {_set} set.')
-
-        done = False
-        while not done:
-            try:
-                feature_db = sqlite3.connect(feature_db_path)
-                cursor = feature_db.cursor()
-                cursor.execute(sql.create_features_table(COLUMNS))
-                feature_db.commit()
-                cursor.close()
-                done = True
-                helpers.log(f'Created {_set} features table.')
-            except Exception as e:
-                helpers.log(e)
 
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
