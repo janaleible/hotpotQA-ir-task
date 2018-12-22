@@ -10,7 +10,7 @@ HOME_DIR = (os.environ['HOME'] if (os.environ.get('SLURM_JOBID') is not None) el
 SETTING = 'full'
 # SETTING = 'dummy'
 
-GRAND_BATCH_SIZE = 10000
+GRAND_CHUNK = 7000
 THREAD_NO = 2
 PROCESS_CONTEXT = 'fork'
 
@@ -101,6 +101,7 @@ CANDIDATE_COLUMNS = ['question_id', 'type', 'level', 'doc_iid', 'doc_wid', 'doc_
 # reference constants
 TRAIN_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'train_{SETTING}_reference.json')
 DEV_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'dev_{SETTING}_reference.json')
+TEST_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'test_{SETTING}_reference.json')
 
 # entity recognition constants
 E2I = {
@@ -141,8 +142,9 @@ FEATURE_BASE_COLUMN_NAMES = [
 ]
 FEATURE_TARGET_COLUMN_NAME = 'relevant'
 
-TRAIN_FEATURES_CHUNK = 100
-DEV_FEATURES_CHUNK = 100
+TRAIN_FEATURES_CHUNK = 10
+DEV_FEATURES_CHUNK = 10
+TEST_FEATURES_CHUNK = 10
 FEATURES_DIR = os.path.join(BASE_DIR, 'data', 'features')
 
 TRAIN_FEATURES_DB = os.path.join(FEATURES_DIR, f'train.{SETTING}.feature.db')

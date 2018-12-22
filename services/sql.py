@@ -26,7 +26,7 @@ def create_features_table(columns: List[str]):
 
 
 def insert_features(columns: List[str]):
-    return f'INSERT INTO features VALUES ({", ".join(["?"] * (len(columns) + 1))})' # +1 for the id
+    return f'INSERT INTO features VALUES ({", ".join(["?"] * (len(columns) + 1))})'  # +1 for the id
 
 
 def create_table(name: str = 'retrievals') -> str:

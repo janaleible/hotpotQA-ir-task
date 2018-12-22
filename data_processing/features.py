@@ -25,6 +25,8 @@ def rows_to_db(_set: str, rows: List[Any]):
         db_path = constants.TRAIN_FEATURES_DB
     elif _set == 'dev':
         db_path = constants.DEV_FEATURES_DB
+    elif _set == 'test':
+        db_path = constants.TEST_FEATURES_DB
     else:
         raise ValueError(f'Unknown set. {_set}')
     done = False
@@ -75,40 +77,44 @@ def build():
 
     os.makedirs(constants.FEATURES_DIR, exist_ok=True)
     iterator: List[Tuple[str, str, Callable]] = [
-        (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_DB, constants.TRAIN_FEATURES_CHUNK),
-        (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_DB, constants.DEV_FEATURES_CHUNK)
+        # (constants.TRAIN_CANDIDATES_DB, constants.TRAIN_FEATURES_DB, constants.TRAIN_FEATURES_CHUNK),
+        # (constants.DEV_CANDIDATES_DB, constants.DEV_FEATURES_DB, constants.DEV_FEATURES_CHUNK),
+        (constants.TEST_CANDIDATES_DB, constants.TEST_FEATURES_DB, constants.TEST_FEATURES_CHUNK)
     ]
 
     for (candidate_db_path, feature_db_path, chunk) in iterator:
         start_time = datetime.now()
         _set = candidate_db_path.split("/")[-1].split(".")[1]
-        candidate_db = sqlite3.connect(candidate_db_path)
-        cursor = candidate_db.cursor()
-        start = 1  # first id in the database
-        (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
-        if _set == 'dev' and constants.SETTING == 'full':
-            stop = 1000000  # truncate dev set
-        cursor.close()
-        candidate_db.close()
-        id_range = range(start, stop + 1)
-        helpers.log(f'Retrieved {len(id_range)} candidate indices for {_set} set.')
 
         done = False
+        feature_db = sqlite3.connect(feature_db_path)
+        cursor = feature_db.cursor()
         while not done:
             try:
-                feature_db = sqlite3.connect(feature_db_path)
-                cursor = feature_db.cursor()
                 cursor.execute(sql.create_features_table(COLUMNS))
                 feature_db.commit()
-                cursor.close()
                 done = True
-                helpers.log(f'Created {_set} features table.')
             except Exception as e:
                 helpers.log(e)
+        helpers.log(f'Created {_set} features table.')
+
+        (start,) = cursor.execute('SELECT MAX(id) FROM features').fetchone()
+        start = start if start is not None else 0  # first id in the database
+        cursor.close()
+        feature_db.close()
+        helpers.log(f'Starting feature build at {start}.')
+
+        candidate_db = sqlite3.connect(candidate_db_path)
+        cursor = candidate_db.cursor()
+        (stop,) = cursor.execute('SELECT COUNT(*) FROM candidates').fetchone()  # last id in the database
+        cursor.close()
+        candidate_db.close()
+        id_range = range(start + 1, stop + 1)
+        helpers.log(f'Retrieved {len(id_range)} candidate indices for {_set} set.')
 
         total_count = 0
         _set_generator = parallel.chunk(chunk, zip([_set] * len(id_range), id_range))
-        _batched_set_generator = parallel.chunk(constants.GRAND_BATCH_SIZE, _set_generator)
+        _batched_set_generator = parallel.chunk(constants.GRAND_CHUNK, _set_generator)
         for grand_batch_idx, _batch_set in _batched_set_generator:
             grand_batch_count = 0
             for batch_count in parallel.execute(_build_candidates, _batch_set, _as='process'):
@@ -128,27 +134,33 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
 
         if _set == 'train':
             candidate_db_path = constants.TRAIN_CANDIDATES_DB
+            feature_db_path = constants.TRAIN_FEATURES_DB
         elif _set == 'dev':
             candidate_db_path = constants.DEV_CANDIDATES_DB
+            feature_db_path = constants.DEV_FEATURES_DB
+        elif _set == 'test':
+            candidate_db_path = constants.TEST_CANDIDATES_DB
+            feature_db_path = constants.TEST_FEATURES_DB
         else:
             raise ValueError(f'Unknown dataset {_set}.')
         done = False
-        while not done:
-            try:
-                candidate_db = sqlite3.connect(candidate_db_path)
-                cursor = candidate_db.cursor()
-                candidate_rows = cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
-                cursor.close()
-                candidate_db.close()
-                done = True
-            except Exception as e:
-                helpers.log(e)
+
+        candidate_db = sqlite3.connect(candidate_db_path)
+        candidate_cursor = candidate_db.cursor()
+        candidate_rows = candidate_cursor.execute(sql.fetch_candidate_batch, (start, stop)).fetchall()
+        candidate_cursor.close()
+        candidate_db.close()
 
         batch_count = 0
         rows = []
+        feature_db = sqlite3.connect(feature_db_path)
+        feature_cursor = feature_db.cursor()
         for candidate_row in candidate_rows:
             (_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
              question_text, doc_text, question_tokens, doc_tokens, tfidf, relevance) = candidate_row
+            exists = feature_cursor.execute('SELECT id FROM features WHERE id = ?', (_id,)).fetchone()
+            if exists is not None:
+                continue
 
             row: List[str] = [_id, question_id, _type, level, doc_iid, doc_wid, doc_title,
                               question_text, doc_text, question_tokens, doc_tokens, tfidf]
@@ -158,6 +170,9 @@ def _build_candidates(numbered_batch: Tuple[int, Tuple[str, Dict[str, Any]]]) ->
             batch_count += 1
         rows_to_db(_set, rows)
         helpers.log(f'Processed batch {batch_index} of {batch_count} pairs in {datetime.now() - start_time}')
+
+        feature_cursor.close()
+        feature_db.close()
 
         return batch_count
     except Exception as e:

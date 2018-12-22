@@ -14,10 +14,13 @@ from services.index import Index
 INDEX: Index
 COLUMNS = ct.CANDIDATE_COLUMNS
 QUESTION_COUNTS: Dict[str, int]
+SKIP_RELEVANT: bool
 
 
-def build():
+def build(skip_relevant: bool = True):
     global INDEX, COLUMNS, QUESTION_COUNTS
+    global SKIP_RELEVANT
+    SKIP_RELEVANT = skip_relevant
     INDEX = Index('tfidf')
     helpers.log('Loaded index.')
 
@@ -63,6 +66,7 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
     (no, batch), db, cursor = numbered_batch, None, None
     processed_count = 0
     skipped_count = 0
+    relevant_count = 0
 
     for split, question in batch:
         if split == 'train':
@@ -111,8 +115,10 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
             row: List[str] = [json.dumps(_id), json.dumps(_type), json.dumps(_level)]
             relevance = _extract_relevance(row, doc_iid, relevant_doc_iids, False)
             if relevance == 1:
-                result_idx += 1
-                continue
+                relevant_count += 1
+                if not SKIP_RELEVANT:
+                    result_idx += 1
+                    continue
 
             doc_wid, doc_title = _extract_doc_identifiers(row, INDEX, doc_iid)
             doc_text = _extract_text(row, _str, doc_wid)
@@ -137,7 +143,8 @@ def _build_candidates(numbered_batch: Tuple[int, List[Dict[str, Any]]]) -> int:
         db.close()
 
     end = datetime.now()
-    helpers.log(f'Processed batch {no} in {end - start}. Processed {processed_count}. Skipped {skipped_count}')
+    helpers.log(f'Processed batch {no} in {end - start}. Processed {processed_count}. Skipped {skipped_count}. '
+                f'Relevant documents found {relevant_count}')
 
     return len(batch)
 
