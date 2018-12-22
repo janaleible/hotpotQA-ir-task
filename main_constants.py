@@ -66,13 +66,16 @@ EMBEDDINGS_200 = os.path.join(EMBEDDINGS_DIR, 'glove.6B.200d.npz')
 EMBEDDINGS_300 = os.path.join(EMBEDDINGS_DIR, 'glove.6B.300d.npz')
 
 # model constants
-L2R_MODEL_DIR = os.path.join(HOME_DIR, 'models', '{}') # Make sure models are saved to permanent storage during training
+MODEL_BASE_DIR = os.path.join(HOME_DIR, 'models')
+L2R_MODEL_DIR = os.path.join(MODEL_BASE_DIR, '{}') # Make sure models are saved to permanent storage during training
 L2R_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint.pt')
 L2R_BEST_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint_best.pt')
 L2R_TRAIN_PROGRESS = os.path.join(L2R_MODEL_DIR, 'learning_progress.csv')
-L2R_LEARNING_PROGRESS_PLOT = os.path.join(L2R_MODEL_DIR, 'learning_progress.pdf')
 L2R_EVAL = os.path.join(L2R_MODEL_DIR, 'trec_eval_{}.json')
 L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg_{}.json')
+
+L2R_LEARNING_PROGRESS_PLOT = os.path.join(L2R_MODEL_DIR, 'learning_progress.pdf')
+REPORT_LEARNING_PROGRESS_PLOT = os.path.join('../report/figures/training_{}.pdf')
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 VOCAB_SIZE = 400000
