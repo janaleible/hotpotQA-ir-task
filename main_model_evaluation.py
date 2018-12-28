@@ -1,3 +1,5 @@
+import argparse
+
 import numpy
 import os
 import pickle
@@ -131,4 +133,9 @@ def _load_checkpoint(model, optimizer, config: Config):
 
 
 if __name__ == '__main__':
-    run_eval('dev', models['max_pool_llr_full_pw'])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--dataset', type=str, choices=['train', 'dev', 'test'])
+    parser.add_argument('-m', '--model', type=str, required=True,
+                        choices=['max_pool_llr_features_pw', 'max_pool_llr_embeddings_pw', 'max_pool_llr_full_pw'])
+    args, _ = parser.parse_known_args()
+    run_eval(args.dataset, models[args.model])
