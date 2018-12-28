@@ -37,4 +37,4 @@ class Pointwise(Ranker):
 
         score = self.scorer(document_hns, query_hns, features)
 
-        return score
+        return score, (document_hns, query_hns, features)

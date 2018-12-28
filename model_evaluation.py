@@ -119,7 +119,7 @@ def _load_checkpoint(model, optimizer, config: Config):
     best_statistic = 0
     start = datetime.now()
     if os.path.isfile(ct.L2R_TRAIN_PROGRESS.format(config.name)):
-        with open(ct.L2R_MODEL.format(config.name), 'rb') as file:
+        with open(ct.L2R_BEST_MODEL.format(config.name), 'rb') as file:
             checkpoint = torch.load(file, map_location=ct.DEVICE)
         model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
