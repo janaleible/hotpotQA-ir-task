@@ -13,7 +13,7 @@ if __name__ == '__main__':
                                  'max_pool_llr_features_pw', 'max_pool_llr_embeddings_pw', 'max_pool_llr_full_pw', 'all']
                         , help='Which model to create a plot for.')
     parser.add_argument('-o', '--outputdir', type=str, default='test',
-                        choices=['report', 'show', 'save'], help='Directory to save the hotpot files in')
+                        choices=['report', 'show', 'save', 'evaluation'], help='Directory to save the hotpot files in')
     args, _ = parser.parse_known_args()
 
     for model in os.listdir(main_constants.MODEL_BASE_DIR):

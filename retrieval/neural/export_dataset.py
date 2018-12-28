@@ -35,13 +35,13 @@ def evaluate_test_set(model_name: str, output_dir: str):
 
     _load_checkpoint(model, optimizer, config)
 
-    dataset = QueryDocumentsDataset(ct.DEV_FEATURES_DB)
+    dataset = QueryDocumentsDataset(ct.TEST_FEATURES_DB)
     data_loader = DataLoader(dataset, ct.BATCH_SIZE, False, collate_fn=QueryDocumentsDataset.collate,
                              num_workers=os.cpu_count(), pin_memory=True)
 
     model.eval()
     epoch_run = Run()
-    epoch_eval = Evaluator(ct.DEV_TREC_REFERENCE, measures=pytrec_eval.supported_measures)
+    epoch_eval = Evaluator(ct.TEST_TREC_REFERENCE, measures=pytrec_eval.supported_measures)
 
     final_scores = torch.empty((len(data_loader.dataset), 1), dtype=torch.float)
     question_ids = []
@@ -72,7 +72,7 @@ def evaluate_test_set(model_name: str, output_dir: str):
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, model_name + '_hotpot.json'), 'w') as file:
         # use DEV_HOTPOT because that corresponds to our test set. the actual hotpot test set is unlabeled.
-        json.dump(epoch_run.to_json(ct.DEV_FEATURES_DB, ct.TRAIN_HOTPOT_SET), file, indent=True)
+        json.dump(epoch_run.to_json(ct.TEST_FEATURES_DB, ct.DEV_HOTPOT_SET), file, indent=True)
 
     print(json.dumps(trec_eval_agg, indent=True))
 
