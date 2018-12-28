@@ -55,6 +55,7 @@ class Run(dict):
                 article = [paragraph.split(constants.EOS.strip()) for paragraph in
                            doc_text.split(constants.EOP.strip())]
                 article.insert(0, title)
+                article.insert(1, score)
                 context.append(article)
 
             full_question = dataset.find_by_id(question_id)
