@@ -129,7 +129,7 @@ def _train_epoch(model: nn.Module, optimizer: optim.Optimizer, data_loader: Data
         targets = targets.to(device=ct.DEVICE, non_blocking=True)
         features = features.to(device=ct.DEVICE, non_blocking=True)
 
-        scores = model(questions, documents, features)
+        scores, encodings = model(questions, documents, features)
         loss = model.criterion(scores, targets)
 
         if config.trainable:
@@ -164,7 +164,7 @@ def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_ev
             targets = targets.to(device=ct.DEVICE, non_blocking=True)
 
             batch_size = questions.shape[0]
-            scores = model(questions, documents, features)
+            scores, encodings = model(questions, documents, features)
             acc += torch.sum((torch.round(scores) == targets).to(dtype=torch.float))
 
             question_ids.extend(batch_question_ids)
