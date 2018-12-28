@@ -128,7 +128,7 @@ def _load_checkpoint(model, optimizer, config: Config):
         model.epochs_trained = checkpoint['epoch']
 
         best_statistic = checkpoint['best_statistic']
-        helpers.log(f'Loaded checkpoint from {ct.L2R_MODEL.format(config.name)} in {datetime.now() - start}.')
+        helpers.log(f'Loaded checkpoint from {ct.L2R_BEST_MODEL.format(config.name)} in {datetime.now() - start}.')
     return best_statistic
 
 
