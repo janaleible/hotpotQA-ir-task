@@ -72,7 +72,7 @@ def run_eval(_set: str, config: Config):
             features = features.to(device=ct.DEVICE, non_blocking=True)
 
             batch_size = questions.shape[0]
-            scores = model(questions, documents, features)
+            scores, encodings = model(questions, documents, features)
 
             question_ids.extend(batch_question_ids)
             document_ids.extend(batch_document_ids)
@@ -131,4 +131,4 @@ def _load_checkpoint(model, optimizer, config: Config):
 
 
 if __name__ == '__main__':
-    run_eval('test', models['max_pool_llr_full_pw'])
+    run_eval('dev', models['max_pool_llr_full_pw'])

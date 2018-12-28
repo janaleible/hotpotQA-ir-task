@@ -8,7 +8,6 @@ from datetime import datetime
 from typing import Tuple, Dict
 import numpy
 import pytrec_eval
-from tqdm import tqdm
 
 from services.evaluator import Evaluator
 from services.run import Run
@@ -25,13 +24,10 @@ random.seed(42)
 torch.random.manual_seed(42)
 numpy.random.seed(42)
 
-INT2WID: Dict[int, int]
-WID2TITLE: Dict[int, str]
-
 with open(ct.INT2WID, 'rb') as file:
-    INT2WID = pickle.load(file)
+    INT2WID: Dict[int, int] = pickle.load(file)
 with open(ct.WID2TITLE, 'rb') as file:
-    WID2TITLE = pickle.load(file)
+    WID2TITLE: Dict[int, str] = pickle.load(file)
 
 
 def run(config: Config) -> None:
@@ -156,7 +152,7 @@ def _evaluate_epoch(model: nn.Module, ref: str, data_loader: DataLoader, trec_ev
     question_ids = []
     document_ids = []
     with torch.no_grad():
-        for idx, batch in tqdm(enumerate(data_loader)):
+        for idx, batch in enumerate(data_loader):
             (questions, documents, features, targets, batch_question_ids, batch_document_ids) = batch
             questions = questions.to(device=ct.DEVICE, non_blocking=True)
             documents = documents.to(device=ct.DEVICE, non_blocking=True)

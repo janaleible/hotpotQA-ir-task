@@ -2,7 +2,7 @@ import argparse
 import os
 
 import main_constants
-from retrieval.neural.export_dataset import evaluate_testset
+from retrieval.neural.export_dataset import evaluate_test_set
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -19,4 +19,4 @@ if __name__ == '__main__':
     for model in os.listdir(main_constants.MODEL_BASE_DIR):
         if os.path.isfile(main_constants.L2R_BEST_MODEL.format(model)):
             if args.model == 'all' or model == args.model:
-                evaluate_testset(model, args.outputdir)
+                evaluate_test_set(model, args.outputdir)
