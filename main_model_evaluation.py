@@ -1,3 +1,5 @@
+import argparse
+
 import numpy
 import os
 import pickle
@@ -72,7 +74,7 @@ def run_eval(_set: str, config: Config):
             features = features.to(device=ct.DEVICE, non_blocking=True)
 
             batch_size = questions.shape[0]
-            scores = model(questions, documents, features)
+            scores, encodings = model(questions, documents, features)
 
             question_ids.extend(batch_question_ids)
             document_ids.extend(batch_document_ids)
@@ -119,16 +121,21 @@ def _load_checkpoint(model, optimizer, config: Config):
     best_statistic = 0
     start = datetime.now()
     if os.path.isfile(ct.L2R_TRAIN_PROGRESS.format(config.name)):
-        with open(ct.L2R_MODEL.format(config.name), 'rb') as file:
+        with open(ct.L2R_BEST_MODEL.format(config.name), 'rb') as file:
             checkpoint = torch.load(file, map_location=ct.DEVICE)
         model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         model.epochs_trained = checkpoint['epoch']
 
         best_statistic = checkpoint['best_statistic']
-        helpers.log(f'Loaded checkpoint from {ct.L2R_MODEL.format(config.name)} in {datetime.now() - start}.')
+        helpers.log(f'Loaded checkpoint from {ct.L2R_BEST_MODEL.format(config.name)} in {datetime.now() - start}.')
     return best_statistic
 
 
 if __name__ == '__main__':
-    run_eval('test', models['max_pool_llr_full_pw'])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--dataset', type=str, choices=['train', 'dev', 'test'])
+    parser.add_argument('-m', '--model', type=str, required=True,
+                        choices=['max_pool_llr_features_pw', 'max_pool_llr_embeddings_pw', 'max_pool_llr_full_pw'])
+    args, _ = parser.parse_known_args()
+    run_eval(args.dataset, models[args.model])
