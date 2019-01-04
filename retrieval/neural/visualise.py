@@ -101,7 +101,7 @@ def plot(config: Config, show=True, output_path=None):
         Line2D([0], [0], color=map_10_color, linewidth=1, linestyle='-'),
         Line2D([0], [0], color=ndcg_10_color, linewidth=1, linestyle='-'),
     ]
-    legend_labels = ['train', 'test', 'loss', 'recall@10', 'mAP@10', 'NDCG@10']
+    legend_labels = ['train', 'dev', 'loss', 'recall@10', 'mAP@10', 'NDCG@10']
     plt.legend(legend_keys, legend_labels, loc='upper right', fontsize='small')
 
 
