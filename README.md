@@ -1,4 +1,6 @@
 # Improving Retriveal and Comprehension on HotpotQA
+
+Research based on [(Yang, Qi, Zhang, et al. 2018)](https://hotpotqa.github.io/)
  
 ## Setup and Installation
 
