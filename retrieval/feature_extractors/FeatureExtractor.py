@@ -1,4 +1,6 @@
 from abc import abstractmethod
+from typing import List
+
 from services.index import Index
 
 
@@ -7,7 +9,7 @@ class FeatureExtractor(object):
 
     @property
     @abstractmethod
-    def feature_name(self) -> str:
+    def feature_name(self) -> List[str]:
         raise NotImplementedError
 
     def __init__(self, index: Index):

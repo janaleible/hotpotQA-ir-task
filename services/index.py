@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import string
 import pyndri
@@ -79,7 +80,7 @@ class Index(object):
         self.index.close()
         del self
 
-    def __init__(self, env: str = 'default', verbose: bool = False):
+    def __init__(self, env: str = 'default', verbose: bool = False, avg_len=False):
         if verbose:
             helpers.log(f'Loading index {INDRI_INDEX_DIR} with {env} query environment.')
         start = datetime.now()
@@ -87,6 +88,13 @@ class Index(object):
         self.index = pyndri.Index(f'{INDRI_INDEX_DIR}')
         self.token2id, self.id2token, self.id2df = self.index.get_dictionary()
         self.id2tf = self.index.get_term_frequencies()
+
+        if avg_len:
+            # Monte Carlo Estimation for document length:
+            doc_lengths = np.empty(self.index.document_count(), dtype=np.float)
+            for (idx, doc_iid) in enumerate(range(self.index.document_base(), self.index.maximum_document())):
+                doc_lengths[idx] = self.index.document_length(doc_iid)
+            self.avg_doc_len = float(doc_lengths.mean())
 
         self.tokenizer = Tokenizer()
 

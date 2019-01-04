@@ -1,7 +1,38 @@
+from typing import Tuple, List
+
+create_candidate_table = """CREATE TABLE IF NOT EXISTS candidates
+    (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, question_id TEXT, type TEXT, level TEXT,
+        doc_iid TEXT, doc_wid TEXT, doc_title TEXT, 
+        question_text TEXT, doc_text TEXT, question_tokens TEXT, doc_tokens TEXT,
+        tfidf TEXT, relevance TEXT
+    )"""
+
+insert_candidate = """INSERT INTO candidates 
+    (question_id, type, level, doc_iid, doc_wid, doc_title, 
+    question_text, doc_text, question_tokens, doc_tokens, 
+    tfidf, relevance)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"""
+
+count_question_rows = """SELECT question_id, COUNT(*) FROM candidates GROUP BY question_id"""
+
+fetch_candidate_batch = """SELECT * FROM candidates WHERE id >= ? AND id <= ?"""
+fetch_candidate_by_id = """SELECT * FROM candidates WHERE id = ?"""
+
+
+def create_features_table(columns: List[str]):
+    c = ", ".join(col + " TEXT" for col in columns)
+    return f'CREATE TABLE IF NOT EXISTS features (id INTEGER PRIMARY KEY, {c})'
+
+
+def insert_features(columns: List[str]):
+    return f'INSERT INTO features VALUES ({", ".join(["?"] * (len(columns) + 1))})'  # +1 for the id
+
+
 def create_table(name: str = 'retrievals') -> str:
     return f"""
     CREATE TABLE IF NOT EXISTS  {name}
-    (id INTEGER  AUTOINCREMENT, q_id TEXT, type TEXT, level TEXT, target_titles BLOB, result_int_ids BLOB)
+    (id INTEGER PRIMARY KEY AUTOINCREMENT, q_id TEXT, type TEXT, level TEXT, target_titles BLOB, result_int_ids BLOB)
     """
 
 

@@ -3,8 +3,8 @@ from typing import Dict, Any
 from torch import nn, optim
 
 from retrieval.neural.modules.encoders import Encoder, MaxPoolEncoder, MeanPoolEncoder, GRUEncoder
-from retrieval.neural.modules.scorers import Scorer, AbsoluteCosineScorer, BilinearLogisticRegression, \
-    LinearLogisticRegression
+from retrieval.neural.modules.scorers import Scorer, AbsoluteCosineScorer, FullBilinearLogisticRegression, \
+    FullLinearLogisticRegression, SemanticLinearLogisticRegression, FeatureLinearLogisticRegression
 from retrieval.neural.modules.rankers import Pointwise
 from torch.optim import SGD, Adam
 
@@ -50,81 +50,113 @@ class Config(object):
 
 
 models = {
-    'max_pool_bllr_pw': Config(**{'name': 'max_pool_bllr_pw',
-                                  'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
-                                  'train_question_set': const.TRAIN_HOTPOT_SET,
-                                  'dev_question_set': const.DEV_HOTPOT_SET,
-                                  'query_encoder': MaxPoolEncoder,
-                                  'document_encoder': MaxPoolEncoder,
-                                  'scorer': BilinearLogisticRegression,
-                                  'ranker': Pointwise,
-                                  'optimizer': Adam,
-                                  'embedding_dim': 50,
-                                  'epochs': 1000,
-                                  'trainable': True,
-                                  'scorer_kwargs': {
-                                      'in_features': 50
-                                  }}
-                               ),
-    'max_pool_llr_pw': Config(**{'name': 'max_pool_llr_pw',
-                                 'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
-                                 'train_question_set': const.TRAIN_HOTPOT_SET,
-                                 'dev_question_set': const.DEV_HOTPOT_SET,
-                                 'query_encoder': MaxPoolEncoder,
-                                 'document_encoder': MaxPoolEncoder,
-                                 'scorer': LinearLogisticRegression,
-                                 'ranker': Pointwise,
-                                 'optimizer': Adam,
-                                 'embedding_dim': 50,
-                                 'epochs': 1000,
-                                 'trainable': True,
-                                 'scorer_kwargs': {
-                                     'in_features': 50 * 2
-                                 }}
-                              ),
-    'mean_pool_bllr_pw': Config(**{'name': 'mean_pool_bllr_pw',
-                                   'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
-                                   'train_question_set': const.TRAIN_HOTPOT_SET,
-                                   'dev_question_set': const.DEV_HOTPOT_SET,
-                                   'query_encoder': MeanPoolEncoder,
-                                   'document_encoder': MeanPoolEncoder,
-                                   'scorer': BilinearLogisticRegression,
-                                   'ranker': Pointwise,
-                                   'optimizer': Adam,
-                                   'embedding_dim': 50,
-                                   'epochs': 1000,
-                                   'trainable': True,
-                                   'scorer_kwargs': {
-                                       'in_features': 50
-                                   }}),
-    'mean_pool_llr_pw': Config(**{'name': 'mean_pool_llr_pw',
-                                  'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
-                                  'train_question_set': const.TRAIN_HOTPOT_SET,
-                                  'dev_question_set': const.DEV_HOTPOT_SET,
-                                  'query_encoder': MeanPoolEncoder,
-                                  'document_encoder': MeanPoolEncoder,
-                                  'scorer': LinearLogisticRegression,
-                                  'ranker': Pointwise,
-                                  'optimizer': Adam,
-                                  'embedding_dim': 50,
-                                  'epochs': 1000,
-                                  'trainable': True,
-                                  'scorer_kwargs': {
-                                      'in_features': 50 * 2
-                                  }}),
+    'max_pool_llr_full_pw': Config(**{'name': 'max_pool_llr_full_pw',
+                                      'train_candidate_db': const.TRAIN_CANDIDATES_DB,
+                                      'train_question_set': const.TRAIN_HOTPOT_SET,
+                                      'dev_question_set': const.DEV_HOTPOT_SET,
+                                      'query_encoder': MaxPoolEncoder,
+                                      'document_encoder': MaxPoolEncoder,
+                                      'scorer': FullLinearLogisticRegression,
+                                      'ranker': Pointwise,
+                                      'optimizer': Adam,
+                                      'embedding_dim': 50,
+                                      'epochs': 100,
+                                      'trainable': True,
+                                      'scorer_kwargs': {
+                                          'in_features': 50 * 2 + 20
+                                      }}
+                                   ),
+    'max_pool_llr_embeddings_pw': Config(**{'name': 'max_pool_llr_embeddings_pw',
+                                            'train_candidate_db': const.TRAIN_CANDIDATES_DB,
+                                            'train_question_set': const.TRAIN_HOTPOT_SET,
+                                            'dev_question_set': const.DEV_HOTPOT_SET,
+                                            'query_encoder': MaxPoolEncoder,
+                                            'document_encoder': MaxPoolEncoder,
+                                            'scorer': SemanticLinearLogisticRegression,
+                                            'ranker': Pointwise,
+                                            'optimizer': Adam,
+                                            'embedding_dim': 50,
+                                            'epochs': 100,
+                                            'trainable': True,
+                                            'scorer_kwargs': {
+                                                'in_features': 50 * 2
+                                            }}
+                                         ),
+    'max_pool_llr_features_pw': Config(**{'name': 'max_pool_llr_features_pw',
+                                          'train_candidate_db': const.TRAIN_CANDIDATES_DB,
+                                          'train_question_set': const.TRAIN_HOTPOT_SET,
+                                          'dev_question_set': const.DEV_HOTPOT_SET,
+                                          'query_encoder': MaxPoolEncoder,
+                                          'document_encoder': MaxPoolEncoder,
+                                          'scorer': FeatureLinearLogisticRegression,
+                                          'ranker': Pointwise,
+                                          'optimizer': Adam,
+                                          'embedding_dim': 50,
+                                          'epochs': 100,
+                                          'trainable': True,
+                                          'scorer_kwargs': {
+                                              'in_features': 20
+                                          }}
+                                       ),
     'gru_llr_pw': Config(**{'name': 'gru_llr_pw',
-                            'train_candidate_db': const.TRAIN_UNIGRAM_TFIDF_CANDIDATES,
+                            'train_candidate_db': const.TRAIN_CANDIDATES_DB,
                             'train_question_set': const.TRAIN_HOTPOT_SET,
                             'dev_question_set': const.DEV_HOTPOT_SET,
                             'query_encoder': GRUEncoder,
                             'document_encoder': GRUEncoder,
-                            'scorer': LinearLogisticRegression,
+                            'scorer': SemanticLinearLogisticRegression,
                             'ranker': Pointwise,
                             'optimizer': Adam,
                             'embedding_dim': 50,
-                            'epochs': 1000,
+                            'epochs': 100,
                             'trainable': True,
                             'scorer_kwargs': {
                                 'in_features': 50 * 2
-                            }})
+                            }}),
+    'mean_pool_llr_pw': Config(**{'name': 'mean_pool_llr_pw',
+                                  'train_candidate_db': const.TRAIN_CANDIDATES_DB,
+                                  'train_question_set': const.TRAIN_HOTPOT_SET,
+                                  'dev_question_set': const.DEV_HOTPOT_SET,
+                                  'query_encoder': MeanPoolEncoder,
+                                  'document_encoder': MeanPoolEncoder,
+                                  'scorer': SemanticLinearLogisticRegression,
+                                  'ranker': Pointwise,
+                                  'optimizer': Adam,
+                                  'embedding_dim': 50,
+                                  'epochs': 100,
+                                  'trainable': True,
+                                  'scorer_kwargs': {
+                                      'in_features': 50 * 2
+                                  }}),
+    'max_pool_bllr_pw': Config(**{'name': 'max_pool_bllr_pw',
+                                  'train_candidate_db': const.TRAIN_CANDIDATES_DB,
+                                  'train_question_set': const.TRAIN_HOTPOT_SET,
+                                  'dev_question_set': const.DEV_HOTPOT_SET,
+                                  'query_encoder': MaxPoolEncoder,
+                                  'document_encoder': MaxPoolEncoder,
+                                  'scorer': SemanticLinearLogisticRegression,
+                                  'ranker': Pointwise,
+                                  'optimizer': Adam,
+                                  'embedding_dim': 50,
+                                  'epochs': 100,
+                                  'trainable': True,
+                                  'scorer_kwargs': {
+                                      'in_features': 50 * 2
+                                  }}
+                               ),
+    'mean_pool_bllr_pw': Config(**{'name': 'mean_pool_bllr_pw',
+                                   'train_candidate_db': const.TRAIN_CANDIDATES_DB,
+                                   'train_question_set': const.TRAIN_HOTPOT_SET,
+                                   'dev_question_set': const.DEV_HOTPOT_SET,
+                                   'query_encoder': MeanPoolEncoder,
+                                   'document_encoder': MeanPoolEncoder,
+                                   'scorer': SemanticLinearLogisticRegression,
+                                   'ranker': Pointwise,
+                                   'optimizer': Adam,
+                                   'embedding_dim': 50,
+                                   'epochs': 100,
+                                   'trainable': True,
+                                   'scorer_kwargs': {
+                                       'in_features': 50 * 2
+                                   }}),
 }

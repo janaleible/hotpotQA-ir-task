@@ -4,10 +4,15 @@ import torch
 # use tmp dir on cluster, project root locally
 
 BASE_DIR = (os.environ['TMPDIR'] if (os.environ.get('SLURM_JOBID') is not None) else '.')
+HOME_DIR = (os.environ['HOME'] if (os.environ.get('SLURM_JOBID') is not None) else '.')
 
 # switch between dummy and full data setting
-SETTING = 'dummy'
-# SETTING = 'full'
+SETTING = 'full'
+# SETTING = 'dummy'
+
+GRAND_CHUNK = 7000
+THREAD_NO = 2
+PROCESS_CONTEXT = 'fork'
 
 # data processing constants
 CHUNK_SIZE = 1000
@@ -19,7 +24,7 @@ RELEVANT_DOCUMENTS = 2
 # Data constants
 RAW_DATA_DIR = os.path.join(BASE_DIR, 'data', 'raw')
 TREC_CORPUS_DIR = os.path.join(BASE_DIR, 'data', 'trec')
-DOCUMENT_DB = os.path.join(BASE_DIR, 'data', 'documents.gzip')
+DOCUMENT_DB = os.path.join(BASE_DIR, 'data', 'documents', 'documents.sqlite')
 
 # Index constants
 INDEX_DIR = os.path.join(BASE_DIR, 'data', 'index')
@@ -61,34 +66,42 @@ EMBEDDINGS_200 = os.path.join(EMBEDDINGS_DIR, 'glove.6B.200d.npz')
 EMBEDDINGS_300 = os.path.join(EMBEDDINGS_DIR, 'glove.6B.300d.npz')
 
 # model constants
-L2R_MODEL_DIR = os.path.join(BASE_DIR, 'models', '{}')
+MODEL_BASE_DIR = os.path.join(HOME_DIR, 'models')
+L2R_MODEL_DIR = os.path.join(MODEL_BASE_DIR, '{}') # Make sure models are saved to permanent storage during training
 L2R_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint.pt')
 L2R_BEST_MODEL = os.path.join(L2R_MODEL_DIR, 'checkpoint_best.pt')
 L2R_TRAIN_PROGRESS = os.path.join(L2R_MODEL_DIR, 'learning_progress.csv')
-L2R_LEARNING_PROGRESS_PLOT = os.path.join(L2R_MODEL_DIR, 'learning_progress.pdf')
 L2R_EVAL = os.path.join(L2R_MODEL_DIR, 'trec_eval_{}.json')
 L2R_EVAL_AGG = os.path.join(L2R_MODEL_DIR, 'trec_eval_agg_{}.json')
 
-FEATURE_EXTRACTION_DIR = os.path.join(BASE_DIR, 'data', 'feature-extraction')
-IBM_MODEL = os.path.join(FEATURE_EXTRACTION_DIR, f'ibm1_{SETTING}.pickle')
+L2R_LEARNING_PROGRESS_PLOT = os.path.join(L2R_MODEL_DIR, 'learning_progress.pdf')
+REPORT_LEARNING_PROGRESS_PLOT = os.path.join('../report/figures/training_{}.pdf')
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 VOCAB_SIZE = 400000
-BATCH_SIZE = 256
+BATCH_SIZE = 2048
 
 # candidate constants
-TRAIN_NO_CANDIDATES = 4
+TRAIN_DEV_SPLIT = 90 if SETTING == 'dummy' else 85000
+TRAIN_NO_CANDIDATES = 10
 DEV_NO_CANDIDATES = 1000
+TEST_NO_CANDIDATES = 1000
+CANDIDATES_CHUNK = 1
 CANDIDATES_DIR = os.path.join(BASE_DIR, 'data', 'candidates')
-TRAIN_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.gzip')
-DEV_UNIGRAM_TFIDF_CANDIDATES = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.gzip')
-BASE_COLUMN_NAMES = ['question_id', 'type', 'level', 'document_id', 'question', 'document']
-TARGET_COLUMN_NAME = ['target']
-EXTRACTORS = ['entity']
+
+TRAIN_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.train.{SETTING}.sqlite')
+DEV_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.dev.{SETTING}.sqlite')
+TEST_CANDIDATES_DB = os.path.join(CANDIDATES_DIR, f'tfidf.test.{SETTING}.sqlite')
+
+CANDIDATES_TABLE_NAME = 'candidates'
+CANDIDATE_COLUMNS = ['question_id', 'type', 'level', 'doc_iid', 'doc_wid', 'doc_title',
+                     'question_text', 'doc_text', 'question_tokens', 'doc_tokens',
+                     'tfidf', 'relevance']
 
 # reference constants
 TRAIN_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'train_{SETTING}_reference.json')
 DEV_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'dev_{SETTING}_reference.json')
+TEST_TREC_REFERENCE = os.path.join(BASE_DIR, 'data', 'trec_eval', f'test_{SETTING}_reference.json')
 
 # entity recognition constants
 E2I = {
@@ -103,3 +116,46 @@ I2E = {
     2: "ORG",
     3: "MISC"
 }
+
+# features constants
+FEATURE_EXTRACTORS = [
+    'entity',
+    'ibm1',
+    'nibm1',
+    'bigram',
+    'nbigram',
+    'doclen',
+    'qword'
+]
+FEATURE_BASE_COLUMN_NAMES = [
+    'query_id',
+    'type',
+    'level',
+    'doc_id',
+    'doc_wid',
+    'doc_title',
+    'question_text',
+    'document_text',
+    'query_tokens',
+    'doc_tokens',
+    'tfidf',
+]
+FEATURE_TARGET_COLUMN_NAME = 'relevant'
+
+TRAIN_FEATURES_CHUNK = 10
+DEV_FEATURES_CHUNK = 10
+TEST_FEATURES_CHUNK = 10
+FEATURES_DIR = os.path.join(BASE_DIR, 'data', 'features')
+
+TRAIN_FEATURES_DB = os.path.join(FEATURES_DIR, f'train.{SETTING}.feature.db')
+DEV_FEATURES_DB = os.path.join(FEATURES_DIR, f'dev.{SETTING}.feature.db')
+TEST_FEATURES_DB = os.path.join(FEATURES_DIR, f'test.{SETTING}.feature.db')
+
+
+TRANSLATION_MODEL_DIR = os.path.join(BASE_DIR, 'models', 'translation')
+IBM_MODEL = os.path.join(TRANSLATION_MODEL_DIR, f'ibm1_{SETTING}.pickle')
+
+RUN_DIR = os.path.join(L2R_MODEL_DIR, 'runs')
+RESULT_HOTPOT = os.path.join(RUN_DIR, 'hotpot.{}.' + SETTING + '.json')  # format with dev|train
+RESULT_RUN_PICKLE = os.path.join(RUN_DIR, '{}.' + SETTING + '.pickle')  # format with dev|train
+RESULT_RUN_JSON = os.path.join(RUN_DIR, '{}.' + SETTING + '.run')  # format with dev|train
